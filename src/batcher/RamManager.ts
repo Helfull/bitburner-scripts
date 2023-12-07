@@ -27,7 +27,6 @@ export class RAMManager {
           s,
         };
       });
-    ns.tprint('RAMManager initialized');
   }
 
   reavaluate() {
@@ -56,7 +55,7 @@ export class RAMManager {
   }
 
   getSmallestBlock() {
-    return this.blocks.reduce((acc, cur) => acc.ram < cur.ram ? acc : cur);
+    return this.blocks.reduce((acc, cur) => (acc.ram < cur.ram || cur.ram == 0) ? acc : cur);
   }
 
   getCountBlocksOfSize(size: number) {

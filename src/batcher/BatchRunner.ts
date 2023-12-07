@@ -70,5 +70,7 @@ export class BatchRunner extends JobRunner {
         ramReq: batchMetrics.grwWknThreads * 1.75,
       },
     });
+
+    return batchMetrics.finishTimes;
   }
 }

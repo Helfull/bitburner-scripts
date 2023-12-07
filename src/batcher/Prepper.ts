@@ -10,7 +10,6 @@ export class Prepper extends JobRunner {
     private readonly metrics = new Metrics(ns),
   ) {
     super(ns, rmm);
-    ns.tprint('Prepper initialized');
   }
 
   /**
@@ -18,16 +17,19 @@ export class Prepper extends JobRunner {
    * @param target The target to prep
    */
   async execute(target: string) {
-    const prepMetrics = this.metrics.calcPrep(target);
-    const biggestRamBlock = this.rmm.getBiggestBlock().ram;
-
     this.ns.printf('INFO | Target: %s', target);
+
+    const prepMetrics = this.metrics.calcPrep(target);
     this.ns.printf('INFO | Prep Metrics: %s', JSON.stringify(prepMetrics));
+    await this.ns.asleep(100);
+
+    const biggestRamBlock = this.rmm.getBiggestBlock().ram;
     this.ns.printf('INFO | RAM Blocks: %s', this.rmm.getCountBlocksOfSize(1.75));
     this.ns.printf('INFO | Biggest Blocks: %s', biggestRamBlock / 1.75);
     this.ns.printf('INFO | Smallest Blocks: %s', this.rmm.getSmallestBlock().ram / 1.75);
     this.ns.printf('INFO | Total Blocks required: %s', prepMetrics.wknThreads + prepMetrics.grwThreads + prepMetrics.grwWknThreads);
 
+    await this.ns.asleep(100);
     await this.batchJob({
       script: "batcher/jobs/weaken.js",
       threads: prepMetrics.wknThreads,

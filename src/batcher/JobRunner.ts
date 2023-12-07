@@ -35,9 +35,16 @@ export class JobRunner {
    */
   async batchJob(job: Jobs) {
     const scriptRam = this.ns.getScriptRam(job.script);
-    const perIterationThreads = Math.floor(this.rmm.getSmallestBlock().ram / scriptRam);
-    const iterationsReq = Math.ceil(job.threads / perIterationThreads);
+    this.ns.printf('INFO | Script: %s', job.script);
+    this.ns.printf('INFO | Script RAM: %s', scriptRam);
 
+    const perIterationThreads = Math.min(job.threads, Math.floor(this.rmm.getBiggestBlock().ram / scriptRam));
+    this.ns.printf('INFO | Threads: %s', job.threads);
+
+    const iterationsReq = Math.ceil(job.threads / perIterationThreads);
+    this.ns.printf('INFO | Per Iteration Threads: %s', perIterationThreads);
+
+    await this.ns.asleep(100);
     for (let i = 0; i < iterationsReq; i++) {
       await this.run({
         script: job.script,
@@ -63,13 +70,13 @@ export class JobRunner {
 
     if (!jobAssign) return false;
 
-    this.ns.printf('INFO | Assigning %s [%s] to %s with %s threads', job.script, job.args, block.server, job.threads);
+    this.ns.printf('INFO | Assigning %s [%s] to %s with %s threads', job.script, JSON.stringify(job.args), block.server, job.threads);
     if (job.threads > 0) {
       this.ns.scp(job.script, block.server, 'home');
       const pid = this.ns.exec(job.script, block.server, job.threads, JSON.stringify(job));
       while (wait && this.ns.isRunning(pid)) {
-        this.ns.printf('Waiting for %s to finish! [%s]', job.script, job.args);
-        await this.ns.sleep(5000);
+        this.ns.printf('Waiting for %s to finish! [%s]', job.script, JSON.stringify(job.args));
+        await this.ns.asleep(5000);
       }
     }
 
