@@ -22,7 +22,7 @@ export function getServers(ns: NS): string[] {
   return servers;
 }
 
-export function printTable(ns: NS, table: { [key: string]: any[] }) {
+export function printTable(table: { [key: string]: any[] }): string {
   const header = Object.keys(table);
   const cols = Object.values(table)
     .map(col => col.map(v => v?.toString() || ''));
@@ -33,7 +33,7 @@ export function printTable(ns: NS, table: { [key: string]: any[] }) {
     return Math.max(stripColors(columnHeader).length, ...cols[i]?.map(v => stripColors(v || '').length) || []);
   });
 
-  ns.tprint([
+  return [
     '',
     header.map((v, i) => v.padStart(colWidths[i], ' ')).join(' | '),
     header.map((_, i) => ''.padStart(colWidths[i], '-')).join(' | '),
@@ -42,7 +42,7 @@ export function printTable(ns: NS, table: { [key: string]: any[] }) {
         .map((v, i) => ''.padStart(colWidths[i] - stripColors(v || '').length, ' ') + v)
         .join(' | ')
     ).join('\n'),
-  ].join('\n'));
+  ].join('\n');
 }
 
 

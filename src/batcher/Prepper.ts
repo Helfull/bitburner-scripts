@@ -2,6 +2,8 @@ import { NS } from "../../NetscriptDefinitions";
 import { Metrics } from "batcher/Metrics";
 import type { RAMManager } from "batcher/RamManager";
 import { JobRunner } from "batcher/JobRunner";
+import { getServers } from "cnc/lib";
+import { getRunningScripts, needsPrepping, weightSort } from "lib/utils";
 
 export class Prepper extends JobRunner {
   constructor(
@@ -10,6 +12,31 @@ export class Prepper extends JobRunner {
     private readonly metrics = new Metrics(ns),
   ) {
     super(ns, rmm);
+  }
+
+  async loop() {
+    while(true) {
+      this.ns.printf('INFO | Checking for targets to prepare');
+
+      const runningPreps = getRunningScripts(this.ns, 'home', 'prep.js').map(p => p.args[0]);
+      const runningBatchers = getRunningScripts(this.ns, 'home', 't.js').map(p => p.args[0]);
+
+      const targets = getServers(this.ns)
+        .filter(s => this.ns.hasRootAccess(s))
+        .filter(s => needsPrepping(this.ns, s))
+        .filter(s => !runningPreps.includes(s))
+        .filter(s => !runningBatchers.includes(s))
+        .sort((a, b) => weightSort(this.ns, a, b));
+
+      this.ns.printf('INFO | Targets to prepare: %s', targets.join(', '));
+
+      for(const target of targets) {
+        this.ns.exec('prep.js', 'home', 1, target);
+      }
+
+      this.ns.printf('INFO | Sleeping for %s', this.ns.tFormat(120000));
+      await this.ns.sleep(120000);
+    }
   }
 
   /**

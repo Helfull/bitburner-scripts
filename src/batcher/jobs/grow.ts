@@ -17,6 +17,6 @@ export async function main(ns: NS) {
   });
 
   ns.atExit(() => {
-    ns.tprintf('INFO | Growing %s on %s finished', job.args.target, job.block.server);
+    ns.printf('INFO | Growing %s on %s finished', job.args.target, job.block.server);
   });
 }

@@ -12,8 +12,8 @@ export class BatchRunner extends JobRunner {
     super(ns, rmm);
   }
 
-  async execute(target: string, startDelay = 0) {
-    const batchMetrics = this.metrics.calcBatch(target, 0.1, startDelay);
+  async execute(target: string, greed = 0.1, startDelay = 0) {
+    const batchMetrics = this.metrics.calcBatch(target, greed, startDelay);
 
     this.ns.printf('INFO | Target: %s', target);
     this.ns.printf('INFO | Metrics:');

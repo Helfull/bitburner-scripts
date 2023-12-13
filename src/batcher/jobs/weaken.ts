@@ -17,6 +17,6 @@ export async function main(ns: NS) {
   });
 
   ns.atExit(() => {
-    ns.tprintf('INFO | Weaking %s on %s finished', job.args.target, job.block.server);
+    ns.printf('INFO | Weaking %s on %s finished', job.args.target, job.block.server);
   });
 }

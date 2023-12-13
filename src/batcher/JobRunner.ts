@@ -46,7 +46,7 @@ export class JobRunner {
 
     await this.ns.asleep(100);
     for (let i = 0; i < iterationsReq; i++) {
-      await this.run({
+      await this.runJob({
         script: job.script,
         threads: perIterationThreads,
         args: job.args || {},
@@ -63,7 +63,7 @@ export class JobRunner {
    * @param job The job to run
    * @returns TRUE if successful, FALSE if not
    */
-  async run(job: JobBlocked, wait = true) {
+  async runJob(job: JobBlocked, wait = true) {
     if (job.threads <= 0) return true;
     const block = job.block;
     const jobAssign = this.rmm.assign(block);
@@ -84,6 +84,6 @@ export class JobRunner {
   }
 
   async dispatch(job: JobBlocked) {
-    return this.run(job, false);
+    return this.runJob(job, false);
   }
 }

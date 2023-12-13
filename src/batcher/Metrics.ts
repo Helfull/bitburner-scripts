@@ -43,6 +43,9 @@ const SEC_DEC_WKN = 0.05;
 const SEC_INC_HCK = 0.002;
 const SEC_INC_GRW = 0.004;
 
+const SERVER_BASE_GROWTH_RATE = 1.03;
+const SERVER_MAX_GROWTH_RATE = 1.0035;
+
 export class Metrics {
 
   constructor(
@@ -66,6 +69,45 @@ export class Metrics {
       grwThreads,
       grwWknThreads: Math.max(Math.ceil(grwThreads * SEC_INC_GRW / SEC_DEC_WKN), 1),
     };
+  }
+
+  calcGreedy(target: string, threads = 1) {
+    const server = this.ns.getServer(target);
+    const player = this.ns.getPlayer();
+    // 2. Calculate how much money a grow of that size would restore.
+
+    // Grow calculation:
+
+    const hackDifficulty = server.hackDifficulty ?? 100;
+    const ajdGrowthRate = Math.min(SERVER_MAX_GROWTH_RATE, 1 + (SERVER_BASE_GROWTH_RATE - 1)  / hackDifficulty);
+
+    function srvGrowthPercent(targettingThreads: number) {
+      if (!server.serverGrowth) throw new Error('Server has no growth rate.');
+
+      const serverGrowthPercentage = server.serverGrowth / 100;
+      const srcGrwCycles = Math.max(Math.ceil(targettingThreads), 0);
+      const adjSrvGrwCycles = srcGrwCycles * serverGrowthPercentage * 1;
+      return Math.pow(ajdGrowthRate, adjSrvGrwCycles * player.mults.hacking_grow);
+    }
+
+    const srvGrowthPerc = srvGrowthPercent(threads);
+    this.ns.tprintf('INFO | Grow Threads: %s', this.ns.formatNumber(threads, 0));
+    this.ns.tprintf('INFO | Server Growth Percent: %s', this.ns.formatPercent(srvGrowthPerc));
+    this.ns.tprintf('INFO | Server Growth Percent (raw): %s', srvGrowthPerc);
+    this.ns.tprintf('INFO | Server Growth Money: %s', this.ns.formatNumber((server.moneyAvailable || 0) * srvGrowthPerc));
+    this.ns.tprintf('INFO | Server Max Money: %s', this.ns.formatNumber(server.moneyMax || 0));
+
+    if (srvGrowthPerc > 1) {
+      // Reduce the number of threads to grow only to the max money.
+      threads = Math.ceil(threads / srvGrowthPerc);
+    }
+
+    this.ns.tprintf('INFO | Grow Threads (adjusted): %s', this.ns.formatNumber(threads, 0));
+    this.ns.tprintf('INFO | Server Growth Percent: %s', this.ns.formatPercent(srvGrowthPercent(threads)));
+
+    // 3. Calculate the hack threads needed to take that much money.
+
+    // 4. Calculate the two weaken thread counts needed to restore min security after the hack and grow.
   }
 
   calcBatch(target: string, greed = 0.1, startDelay = 0): BatchMetrics {
