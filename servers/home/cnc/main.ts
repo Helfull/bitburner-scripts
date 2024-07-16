@@ -45,5 +45,5 @@ function formatMessage(ns: NS, message: string) {
       break;
   }
 
-  return [msgData.job?.args?.batchId || 'N/A', msgData.pid || 'N/A', msgData.type, msgData.target, result];
+  return [msgData.job?.args?.batchId || 'N/A', msgData.pid || 'N/A', msgData.target, msgData.type, result];
 }

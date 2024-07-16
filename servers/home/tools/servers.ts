@@ -1,6 +1,9 @@
 import { Server } from "../../../NetscriptDefinitions";
 import { setupDefault } from "../cnc/lib";
 import { config } from "../config";
+import { Logger } from "./logger";
+
+let log = null;
 
 export async function main(ns: NS) {
   const args = setupDefault(ns, [
@@ -9,20 +12,22 @@ export async function main(ns: NS) {
   ]);
 
   const doAll = !args.upgrade && !args.purchase;
-
+  log = new Logger(ns, 'tprintf');
   const pServers = ns.getPurchasedServers()
 
-  ns.tprint(`Purchased servers: ${pServers.length}`);
+  log.log(`Purchased servers: ${pServers.length}`);
   if (doAll || args.upgrade) {
     for (const hostname of pServers) {
       const server = ns.getServer(hostname);
       let curTier: number|string = Math.log(server.maxRam) / Math.log(2);
 
+      const nextUpgradeCost = ns.getPurchasedServerUpgradeCost(server.hostname, Math.pow(2, curTier + 1));
+
       if (curTier >= config.maxRamTier) {
         curTier = 'MAX';
       }
 
-      ns.tprint(`Server: ${server.hostname} (${ns.formatRam(server.maxRam)}, ${curTier})`);
+      log.info(`Server: ${server.hostname} (${ns.formatRam(server.maxRam)}, ${curTier}, ${ns.formatNumber(nextUpgradeCost)})`);
 
       if (server.maxRam < Math.pow(2, config.maxRamTier)) {
         upgradeServer(ns, server);
@@ -33,7 +38,7 @@ export async function main(ns: NS) {
   if (doAll || args.purchase) {
     const purchaseableMaxTier = getMaxTierPurchaseable(ns);
 
-    ns.tprint(`Max tier purchaseable: ${purchaseableMaxTier.maxTier} (${ns.formatNumber(purchaseableMaxTier.cost)})`);
+    log.log(`Max tier purchaseable: ${purchaseableMaxTier.maxTier} (${ns.formatNumber(purchaseableMaxTier.cost)})`);
 
     ns.purchaseServer(getNextServerName(ns), Math.pow(2, purchaseableMaxTier.maxTier));
   }
@@ -56,7 +61,7 @@ function upgradeServer(ns: NS, server: Server) {
 
   if (server.maxRam >= Math.pow(2, maxTier) || maxTier < 1) return false;
 
-  ns.tprint(`Upgrading server: ${server.hostname} (${ns.formatRam(server.maxRam)} to ${ns.formatRam(Math.pow(2, maxTier))})`);
+  log.log(`Upgrading server: ${server.hostname} (${ns.formatRam(server.maxRam)} to ${ns.formatRam(Math.pow(2, maxTier))})`);
   return ns.upgradePurchasedServer(server.hostname, Math.pow(2, maxTier));
 }
 

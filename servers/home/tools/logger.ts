@@ -1,5 +1,5 @@
 export class Logger {
-  constructor(private ns: NS) {}
+  constructor(private ns: NS, private outputFunction = 'printf') {}
 
   public log(message: string, ...args: any[]) {
     this.printf('OKAY | [%s] %s', this.getDate(), this.sprintf(message, ...args));
@@ -32,7 +32,7 @@ export class Logger {
 
   protected printf(message: string, ...args: any[]) {
     try {
-      this.ns.printf(message, ...args);
+      this.ns[this.outputFunction](message, ...args);
     } catch(e) {
       this.ns.print(`ERROR | Failed to printf message: ${message}`);
       return message;

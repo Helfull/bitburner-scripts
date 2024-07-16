@@ -7,7 +7,7 @@ export class ProtoBatcher extends BatchRunner {
     let batchesSinceLastError = 0;
     while(true) {
       try {
-        const finishTimes = await super.execute(target, startDelay);
+        const finishTimes = await super.execute(target, startDelay, batchCount);
         const finishTime = Math.max(...Object.values(finishTimes));
         this.log.info('Batch finishes in %s', this.ns.tFormat(finishTime));
         batchCount++;
