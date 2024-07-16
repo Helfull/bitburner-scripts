@@ -22,7 +22,7 @@ export async function main(ns: NS) {
 
     while(!handle.empty()) {
       const message = handle.read();
-      log.info('%s %s %s %s', ...formatMessage(ns, message));
+      log.info('%s %s %s %s %s', ...formatMessage(ns, message));
       messageLog.push(message);
     }
   }
@@ -45,5 +45,5 @@ function formatMessage(ns: NS, message: string) {
       break;
   }
 
-  return [msgData.pid || 'N/A', msgData.type, msgData.target, result];
+  return [msgData.job?.args?.batchId || 'N/A', msgData.pid || 'N/A', msgData.type, msgData.target, result];
 }

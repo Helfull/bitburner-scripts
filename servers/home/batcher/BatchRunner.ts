@@ -13,7 +13,7 @@ export class BatchRunner extends JobRunner {
     super(ns, rmm, log);
   }
 
-  async execute(target: string, startDelay = 0) {
+  async execute(target: string, startDelay = 0, batchId: number|string = 0) {
     const batchMetrics = this.metrics.calcBatch(target, 0.1, startDelay);
 
     this.log.info('Target: %s', target);
@@ -26,6 +26,7 @@ export class BatchRunner extends JobRunner {
       args: {
         target,
         additionalMsec: batchMetrics.delays.hack,
+        batchId,
       },
       block: {
         server: target,
@@ -39,6 +40,7 @@ export class BatchRunner extends JobRunner {
       args: {
         target,
         additionalMsec: batchMetrics.delays.weakenHack,
+        batchId,
       },
       block: {
         server: target,
@@ -52,6 +54,7 @@ export class BatchRunner extends JobRunner {
       args: {
         target,
         additionalMsec: batchMetrics.delays.grow,
+        batchId,
       },
       block: {
         server: target,
@@ -65,6 +68,7 @@ export class BatchRunner extends JobRunner {
       args: {
         target,
         additionalMsec: batchMetrics.delays.weakenGrow,
+        batchId,
       },
       block: {
         server: target,

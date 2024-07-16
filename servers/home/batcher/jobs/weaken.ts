@@ -1,6 +1,5 @@
-
-import type { Job, JobBlocked } from "batcher/JobRunner";
 import { trySend } from "../../cnc/client";
+import { Job, JobBlocked } from "../JobRunner";
 
 export type JobWeaken = Job & {
   script: 'batcher/jobs/weaken.js';
