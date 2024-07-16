@@ -9,39 +9,46 @@ export async function main(ns: NS) {
   const args = setupDefault(ns, [
     ['upgrade', false],
     ['purchase', false],
+    ['loop', false],
   ]);
 
   const doAll = !args.upgrade && !args.purchase;
   log = new Logger(ns, 'tprintf');
-  const pServers = ns.getPurchasedServers()
 
-  log.log(`Purchased servers: ${pServers.length}`);
-  if (doAll || args.upgrade) {
-    for (const hostname of pServers) {
-      const server = ns.getServer(hostname);
-      let curTier: number|string = Math.log(server.maxRam) / Math.log(2);
+  do {
+    const pServers = ns.getPurchasedServers()
+    log.log(`Purchased servers: ${pServers.length}`);
+    if (doAll || args.upgrade) {
+      for (const hostname of pServers) {
+        const server = ns.getServer(hostname);
+        let curTier: number|string = Math.log(server.maxRam) / Math.log(2);
 
-      const nextUpgradeCost = ns.getPurchasedServerUpgradeCost(server.hostname, Math.pow(2, curTier + 1));
+        const nextUpgradeCost = ns.getPurchasedServerUpgradeCost(server.hostname, Math.pow(2, curTier + 1));
 
-      if (curTier >= config.maxRamTier) {
-        curTier = 'MAX';
-      }
+        if (curTier >= config.maxRamTier) {
+          curTier = 'MAX';
+        }
 
-      log.info(`Server: ${server.hostname} (${ns.formatRam(server.maxRam)}, ${curTier}, ${ns.formatNumber(nextUpgradeCost)})`);
+        log.info(`Server: ${server.hostname} (${ns.formatRam(server.maxRam)}, ${curTier}, ${ns.formatNumber(nextUpgradeCost)})`);
 
-      if (server.maxRam < Math.pow(2, config.maxRamTier)) {
-        upgradeServer(ns, server);
+        if (server.maxRam < Math.pow(2, config.maxRamTier)) {
+          upgradeServer(ns, server);
+        }
       }
     }
-  }
 
-  if (doAll || args.purchase) {
-    const purchaseableMaxTier = getMaxTierPurchaseable(ns);
+    if (doAll || args.purchase) {
+      const purchaseableMaxTier = getMaxTierPurchaseable(ns);
 
-    log.log(`Max tier purchaseable: ${purchaseableMaxTier.maxTier} (${ns.formatNumber(purchaseableMaxTier.cost)})`);
+      log.log(`Max tier purchaseable: ${purchaseableMaxTier.maxTier} (${ns.formatNumber(purchaseableMaxTier.cost)})`);
 
-    ns.purchaseServer(getNextServerName(ns), Math.pow(2, purchaseableMaxTier.maxTier));
-  }
+      ns.purchaseServer(getNextServerName(ns), Math.pow(2, purchaseableMaxTier.maxTier));
+    }
+
+    if (args.loop) {
+      await ns.sleep(1000);
+    }
+  } while (args.loop);
 }
 
 function getNextServerName(ns: NS) {
