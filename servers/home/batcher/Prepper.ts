@@ -8,22 +8,18 @@ export class Prepper extends JobRunner {
     protected readonly ns: NS,
     protected readonly rmm: RAMManager,
     private readonly metrics = new Metrics(ns),
-    protected readonly log = new Logger(ns),
+    protected readonly log = new Logger(ns)
   ) {
     super(ns, rmm, log);
   }
 
-  /**
-   * Preps a target maxing out money and lowering security
-   * @param target The target to prep
-   */
   async execute(target: string) {
-    this.log.info('Target: %s', target);
+    this.log.info("Target: %s", target);
     const prepMetrics = this.metrics.calcPrep(target);
-    this.log.info('Prep Metrics: %s', JSON.stringify(prepMetrics));
+    this.log.info("Prep Metrics: %s", JSON.stringify(prepMetrics));
     await this.ns.asleep(100);
 
-    if (! await this.dispatch({
+    await this.run({
       script: "batcher/jobs/weaken.js",
       threads: prepMetrics.wknThreads,
       args: {
@@ -33,46 +29,68 @@ export class Prepper extends JobRunner {
       block: {
         server: target,
         ramReq: prepMetrics.wknThreads * 1.75,
+        threadSize: 1.75,
+        threads: prepMetrics.wknThreads,
       },
-    })) {
-      throw new RunnerError("Failed to dispatch weaken job");
+    });
+
+    while (prepMetrics.grwThreads > 0) {
+      const perIterationThreads = Math.min(
+        prepMetrics.grwThreads,
+        Math.floor(this.rmm.getBiggestBlock().ram / 1.75)
+      );
+      this.ns.printf("INFO | Threads: %s", prepMetrics.grwThreads);
+      this.ns.printf("INFO | Per Iteration Threads: %s", perIterationThreads);
+      const growWknThreads =
+        this.metrics.calcGrowWknThreads(perIterationThreads);
+      this.ns.printf("INFO | Grow Weaken Threads: %s", growWknThreads);
+
+      const growResult = await this.run({
+        script: "batcher/jobs/grow.js",
+        threads: perIterationThreads,
+        args: {
+          target,
+          additionalMsec: 0,
+        },
+        block: {
+          server: target,
+          ramReq: perIterationThreads * 1.75,
+          threads: perIterationThreads,
+          threadSize: 1.75,
+        },
+      });
+
+      if (!growResult) {
+        throw new RunnerError("Failed to run grow");
+      }
+
+      prepMetrics.grwThreads -= perIterationThreads;
+
+      const wknResult = await this.run({
+        script: "batcher/jobs/weaken.js",
+        threads: growWknThreads,
+        args: {
+          target,
+          additionalMsec: 0,
+        },
+        block: {
+          server: target,
+          ramReq: growWknThreads * 1.75,
+          threads: growWknThreads,
+          threadSize: 1.75,
+        },
+      });
+
+      if (!wknResult) {
+        throw new RunnerError("Failed to run weaken");
+      }
     }
 
-    if (! await this.dispatch({
-      script: "batcher/jobs/grow.js",
-      threads: prepMetrics.grwThreads,
-      args: {
-        target,
-        additionalMsec: prepMetrics.finishTimes.grow,
-      },
-      block: {
-        server: target,
-        ramReq: prepMetrics.grwThreads * 1.75,
-      },
-    })) {
-      throw new RunnerError("Failed to dispatch grow job");
-    }
-
-    if (! await this.dispatch({
-      script: "batcher/jobs/weaken.js",
-      threads: prepMetrics.grwWknThreads,
-      args: {
-        target,
-        additionalMsec: prepMetrics.finishTimes.weakenGrow,
-      },
-      block: {
-        server: target,
-        ramReq: prepMetrics.grwWknThreads * 1.75,
-      },
-    })) {
-      throw new RunnerError("Failed to dispatch grow weaken job");
-    }
-
-    this.log.info('Waiting for jobs to finish');
+    this.log.info("Waiting for jobs to finish");
     const finishTime = Math.max(...Object.values(prepMetrics.finishTimes));
-    this.log.info('Sleeping for %s', this.ns.tFormat(finishTime));
+    this.log.info("Sleeping for %s", this.ns.tFormat(finishTime));
     await this.ns.sleep(finishTime);
 
-    this.log.info('Prepping %s finished', target);
+    this.log.info("Prepping %s finished", target);
   }
 }

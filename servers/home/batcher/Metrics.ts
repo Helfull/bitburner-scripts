@@ -1,12 +1,10 @@
 import { Logger } from "../tools/logger";
 
-
 export class MetricError extends Error {
-
   public data?: Record<string, any>;
 
   constructor(message: string, data?: Record<string, any>) {
-    super(message + (data ? `: ${JSON.stringify(data)}` : ''));
+    super(message + (data ? `: ${JSON.stringify(data)}` : ""));
     this.name = this.constructor.name;
     this.data = data;
   }
@@ -56,22 +54,20 @@ export interface PrepMetrics {
     weaken: number;
     grow: number;
     weakenGrow: number;
-  }
+  };
 }
 
-const SEC_DEC_WKN = 0.05;
-const SEC_INC_HCK = 0.002;
-const SEC_INC_GRW = 0.004;
+export const SEC_DEC_WKN = 0.05;
+export const SEC_INC_HCK = 0.002;
+export const SEC_INC_GRW = 0.004;
 
 export class Metrics {
-
   constructor(
     private readonly ns: NS,
     private readonly bufferDelay = 20,
-    private readonly offset = 5,
-    private readonly log = new Logger(ns),
-    ) {
-  }
+    private readonly offset = 0,
+    private readonly log = new Logger(ns)
+  ) {}
 
   calcPrep(target: string): PrepMetrics {
     const curSecurity = this.ns.getServerSecurityLevel(target);
@@ -94,22 +90,26 @@ export class Metrics {
     };
 
     const delayWeaken = this.offset * 0;
-    const delayGrow = (times.weaken - times.grow) + this.offset * 0;
-    const delayWeakenGrow = (times.weaken - times.weakenGrow) + this.offset * 0;
+    const delayGrow = times.weaken - times.grow + this.offset * 0;
+    const delayWeakenGrow = times.weaken - times.weakenGrow + this.offset * 0;
 
     const finishTimes = {
-      weaken: this.bufferDelay + delayWeaken + times.weaken,
-      grow: this.bufferDelay + delayGrow + times.grow,
-      weakenGrow: this.bufferDelay + delayWeakenGrow + times.weakenGrow,
-    }
+      weaken: delayWeaken + times.weaken,
+      grow: delayGrow + times.grow,
+      weakenGrow: delayWeakenGrow + times.weakenGrow,
+    };
 
     return {
       wknThreads: Math.ceil((curSecurity - minSecurity) / 0.05),
       grwThreads,
-      grwWknThreads: Math.max(Math.ceil(grwThreads * SEC_INC_GRW / SEC_DEC_WKN), 1),
+      grwWknThreads: this.calcGrowWknThreads(grwThreads),
 
       finishTimes,
     };
+  }
+
+  calcGrowWknThreads(grwThreads: number) {
+    return Math.max(Math.ceil((grwThreads * SEC_INC_GRW) / SEC_DEC_WKN), 1);
   }
 
   calcBatch(target: string, greed = 0.1, startDelay = 0): BatchMetrics {
@@ -117,9 +117,16 @@ export class Metrics {
     const maxMoney = this.ns.getServerMaxMoney(target);
     const amount = maxMoney * greed;
     const hckPercent = this.ns.hackAnalyze(target);
-    const hckThreads = Math.max(Math.floor(this.ns.hackAnalyzeThreads(target, amount)), 1);
+    const hckThreads = Math.max(
+      Math.floor(this.ns.hackAnalyzeThreads(target, amount)),
+      1
+    );
     const tGreed = hckPercent * hckThreads;
-    const grwThreads = this.calcGrowThreads(target, maxMoney, (maxMoney - maxMoney * tGreed));
+    const grwThreads = this.calcGrowThreads(
+      target,
+      maxMoney,
+      maxMoney - maxMoney * tGreed
+    );
 
     const times = {
       hack: wknTime / 4,
@@ -128,21 +135,24 @@ export class Metrics {
       weakenGrow: wknTime,
     };
 
-    const delayHack = startDelay + (times.weakenHack - times.hack) + this.offset * 0;
+    const delayHack =
+      startDelay + (times.weakenHack - times.hack) + this.offset * 0;
     const delayWeakenHack = startDelay + this.offset * 1;
-    const delayGrow = startDelay + (times.weakenHack - times.grow) + this.offset * 2;
-    const delayWeakenGrow = startDelay + (times.weakenHack - times.weakenGrow) + this.offset * 3;
+    const delayGrow =
+      startDelay + (times.weakenHack - times.grow) + this.offset * 2;
+    const delayWeakenGrow =
+      startDelay + (times.weakenHack - times.weakenGrow) + this.offset * 3;
 
     const finishTimes = {
       hack: this.bufferDelay + delayHack + times.hack,
       weakenHack: this.bufferDelay + delayWeakenHack + times.weakenHack,
       grow: this.bufferDelay + delayGrow + times.grow,
       weakenGrow: this.bufferDelay + delayWeakenGrow + times.weakenGrow,
-    }
+    };
 
     this.log.log(JSON.stringify(finishTimes, null, 2));
 
-    this.log.log('Batch Metrics:');
+    this.log.log("Batch Metrics:");
     // Finish time differences
     this.log.log(`Hack: ${finishTimes.hack}`);
     this.log.log(`WeakenHack: ${finishTimes.weakenHack}`);
@@ -155,15 +165,17 @@ export class Metrics {
     this.log.log(`(Hack => weaken): ${diff1}`);
     this.log.log(`(Grow => weaken): ${diff2}`);
 
-
     return {
       maxMoney,
 
       grwThreads,
       hckThreads,
 
-      grwWknThreads: Math.max(Math.ceil(grwThreads * SEC_INC_GRW / SEC_DEC_WKN), 1),
-      hckWknThreads: Math.max(Math.ceil(hckThreads * SEC_INC_HCK / SEC_DEC_WKN), 1),
+      grwWknThreads: this.calcGrowWknThreads(grwThreads),
+      hckWknThreads: Math.max(
+        Math.ceil((hckThreads * SEC_INC_HCK) / SEC_DEC_WKN),
+        1
+      ),
 
       times,
 
@@ -181,13 +193,19 @@ export class Metrics {
   calcGrowThreads(target: string, maxMoney: number, curMoney: number): number {
     if (maxMoney <= 0) return 0;
     if (isNaN(maxMoney / curMoney)) {
-      throw new MetricError('maxMoney / curMoney is NaN', {maxMoney, curMoney});
+      throw new MetricError("maxMoney / curMoney is NaN", {
+        maxMoney,
+        curMoney,
+      });
     }
 
-    this.log.log(`Growth Analyze: ${target} MAX: ${this.ns.formatNumber(maxMoney)} CUR: ${this.ns.formatNumber(curMoney)}`);
+    this.log.log(
+      `Growth Analyze: ${target} MAX: ${this.ns.formatNumber(
+        maxMoney
+      )} CUR: ${this.ns.formatNumber(curMoney)}`
+    );
     const growth = this.ns.growthAnalyze(target, maxMoney / curMoney);
     this.log.log(`Growth Analyze: ${target} G: ${growth}`);
     return Math.ceil(growth);
   }
-
 }

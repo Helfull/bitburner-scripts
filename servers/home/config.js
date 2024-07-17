@@ -36,12 +36,12 @@ export const config = {
   },
 
   // Prepper
-  perp: {
+  prep: {
   },
 
   // Proto
   proto: {
-    attackTop: 100,
+    greed: 0.8,
   },
 
   hacknet: {
