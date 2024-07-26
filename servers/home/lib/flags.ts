@@ -4,7 +4,7 @@ type ScriptArg = string | number | boolean;
 
 type ScriptDefinition<T extends FlagsDefinition> = {
   description: string;
-  flags: T;
+  flags?: T;
 };
 
 type Flag<T = any> = {
