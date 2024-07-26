@@ -1,39 +1,35 @@
 import { BatchRunner } from './BatchRunner';
-import { RAMManager } from './RamManager';
 
-export class ProtoBatcher extends BatchRunner {
+export class ContinuesBatcher extends BatchRunner {
   async loop(target: string) {
     this.log.info('Target: %s', target);
     this.ns.setTitle(this.getTitle(target, 0, 0));
     let batchCount = 0;
     let batchesSinceLastError = 0;
     while (true) {
+      await this.ns.sleep(200);
       try {
         this.log.info('Batch %s', batchCount);
-        await this.ns.sleep(1000);
-
         const metrics = await super.execute(target, batchCount);
-
-        await this.ns.sleep(1000);
-
         const finishTime = metrics.ends.weaken;
 
         this.log.info('Batch expected to finish in %s', this.ns.tFormat(finishTime));
-
-        await this.wait();
-
         batchCount++;
         batchesSinceLastError++;
         this.ns.setTitle(this.getTitle(target, batchCount, batchesSinceLastError));
       } catch (e) {
         if (e.name === '_RunnerError') {
+          this.log.error('[%s][CONTINUES_RUNNER_ERROR] %s', this.ns.pid, e.message);
           this.ns.setTitle(
             this.ns.sprintf('%s, Error: %s', this.getTitle(target, batchCount, batchesSinceLastError), e.message),
           );
           batchesSinceLastError = 0;
           await this.ns.sleep(100);
         } else {
-          this.ns.tprint({ error: { name: e.name, message: e.message, stack: e.stack }, pid: this.ns.pid });
+          this.log.error('[%s][CONTINUES_RUNNER_ERROR_UNKOWN] %s', this.ns.pid, e.message);
+          this.log.error(
+            JSON.stringify({ error: { name: e.name, message: e.message, stack: e.stack }, pid: this.ns.pid }),
+          );
           throw e;
         }
       }
@@ -57,6 +53,7 @@ export class ProtoBatcher extends BatchRunner {
     this.log.info('Waiting for finish signal');
 
     do {
+      await this.ns.sleep(10);
       const portData = this.ns.readPort(this.ns.pid);
 
       if (portData === 'NULL PORT DATA') {

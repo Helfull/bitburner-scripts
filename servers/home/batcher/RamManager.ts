@@ -1,7 +1,7 @@
-import { Server } from "../../../NetscriptDefinitions";
-import { Color } from "../colors";
-import { config } from "../config";
-import { Logger } from "../tools/logger";
+import { Server } from '../../../NetscriptDefinitions';
+import { Color } from '@lib/colors';
+import { config } from '../config';
+import { Logger } from '../tools/logger';
 
 export type ServerBlock = {
   server: string;
@@ -27,15 +27,13 @@ export type AssignedBlock = {
 export class RAMManager {
   protected blocks: ServerBlock[] = [];
 
-  constructor(
-    protected ns: NS,
-    servers: Server[],
-    protected log = new Logger(ns)
-  ) {
-    this.blocks = this.mapServers(servers.filter((s) => s.hasAdminRights));
+  protected _getServers: () => Server[];
+
+  constructor(protected ns: NS, servers: Server[], protected log = new Logger(ns)) {
+    this.serverBlocks = servers;
 
     if (this.blocks.length === 0) {
-      ns.tprint(Color.red.wrap("No servers with admin rights"));
+      ns.tprint(Color.red.wrap('No servers with admin rights'));
       ns.exit();
     }
   }
@@ -44,7 +42,7 @@ export class RAMManager {
     return servers.map((s) => {
       let maxRam = s.maxRam;
 
-      if (s.hostname === "home") {
+      if (s.hostname === 'home') {
         maxRam = config.homeRamPercentage(s.maxRam);
       }
 
@@ -61,14 +59,26 @@ export class RAMManager {
   protected getServerMaxRam(server: string) {
     let maxRam = this.ns.getServerMaxRam(server);
 
-    if (server === "home") {
+    if (server === 'home') {
       maxRam = config.homeRamPercentage(maxRam);
     }
 
     return maxRam;
   }
 
-  reavaluate(): RAMManager {
+  set getServers(fn: () => Server[]) {
+    this._getServers = fn;
+  }
+
+  set serverBlocks(servers: Server[]) {
+    this.blocks = this.mapServers(servers.filter((s) => s.hasAdminRights));
+  }
+
+  reevaluate(): RAMManager {
+    if (this._getServers) {
+      this.serverBlocks = this._getServers();
+    }
+
     this.blocks = this.blocks.map((server) => {
       server.ram = server.maxRam() - server.usedRam();
       return server;
@@ -79,19 +89,15 @@ export class RAMManager {
 
   assign(blockJob: Block): AssignedBlock | false {
     this.log.info(
-      `Block Job: ${blockJob.server} ${this.ns.formatRam(
-        blockJob.ramReq
-      )} | Threads: ${blockJob.threads} ThreadSize: ${blockJob.threadSize}`
+      `Block Job: ${blockJob.server} ${this.ns.formatRam(blockJob.ramReq)} | Threads: ${blockJob.threads} ThreadSize: ${
+        blockJob.threadSize
+      }`,
     );
 
-    this.reavaluate();
+    this.reevaluate();
 
     if (blockJob.ramReq > this.totalRam) {
-      this.log.warn(
-        `Not enough total RAM to assign block ${this.ns.formatRam(
-          blockJob.ramReq
-        )}`
-      );
+      this.log.warn(`Not enough total RAM to assign block ${this.ns.formatRam(blockJob.ramReq)}`);
       return false;
     }
 
@@ -103,9 +109,7 @@ export class RAMManager {
     }
 
     // Find the first block that has enough ram
-    const block = this.blocks
-      .sort((a, b) => b.ram - a.ram)
-      .find((b) => b.ram >= blockJob.ramReq);
+    const block = this.blocks.sort((a, b) => b.ram - a.ram).find((b) => b.ram >= blockJob.ramReq);
 
     if (block) return this.assignBlockToServer(block, blockJob);
 
@@ -114,20 +118,25 @@ export class RAMManager {
     let numThreads = blockJob.threads;
     let assignedBlock: AssignedBlock = null;
 
+    let infiniteLoopBreaker = 100_000;
+
     while (numThreads > 0) {
-      const nextBlock = this.blocks
-        .sort((a, b) => b.ram - a.ram)
-        .find((b) => b.ram >= minBlockSize);
+      this.log.debug('Iteration: %s', 100_000 - infiniteLoopBreaker);
+      this.log.debug('Threads left: %s', numThreads);
+
+      if (infiniteLoopBreaker < 0) {
+        this.log.error('Infinite loop detected in %s (args: %)', this.ns.getScriptName(), this.ns.args.join(' '));
+        return false;
+      }
+      infiniteLoopBreaker--;
+      const nextBlock = this.blocks.sort((a, b) => b.ram - a.ram).find((b) => b.ram >= minBlockSize);
 
       if (!nextBlock) {
         this.log.warn(`Not enough blocks to assign ${numThreads} threads`);
         return false;
       }
 
-      const threads = Math.min(
-        numThreads,
-        Math.floor(nextBlock.ram / blockJob.threadSize)
-      );
+      const threads = Math.min(numThreads, Math.floor(nextBlock.ram / blockJob.threadSize));
 
       if (threads < 1) {
         this.log.warn(`Not enough ram to assign ${numThreads} threads`);
@@ -145,7 +154,7 @@ export class RAMManager {
 
       numThreads -= threads;
 
-      this.log.info("Threads open: %s", numThreads);
+      this.log.info('Threads open: %s', numThreads);
     }
 
     assignedBlock.jobBlock = blockJob;
@@ -153,16 +162,8 @@ export class RAMManager {
     return assignedBlock;
   }
 
-  protected assignBlockToServer(
-    serverBlock: ServerBlock,
-    block: Block,
-    assignedBlock?: AssignedBlock
-  ): AssignedBlock {
-    this.log.info(
-      `Assigning block ${this.ns.formatRam(block.ramReq)} to ${
-        serverBlock.server
-      }`
-    );
+  protected assignBlockToServer(serverBlock: ServerBlock, block: Block, assignedBlock?: AssignedBlock): AssignedBlock {
+    this.log.info(`Assigning block ${this.ns.formatRam(block.ramReq)} to ${serverBlock.server}`);
 
     block.server = serverBlock.server;
     serverBlock.ram -= block.ramReq;
@@ -182,21 +183,15 @@ export class RAMManager {
   }
 
   getBiggestBlock() {
-    return this.blocks
-      .sort((a, b) => b.ram - a.ram)
-      .find((x) => x !== undefined);
+    return this.blocks.sort((a, b) => b.ram - a.ram).find((x) => x !== undefined);
   }
 
   getSmallestBlock() {
-    return this.blocks.reduce((acc, cur) =>
-      acc.ram < cur.ram || cur.ram == 0 ? acc : cur
-    );
+    return this.blocks.reduce((acc, cur) => (acc.ram < cur.ram || cur.ram == 0 ? acc : cur));
   }
 
   getCountBlocksOfSize(size: number) {
-    return this.blocks
-      .filter((b) => b.ram >= size)
-      .reduce((acc, cur) => acc + Math.floor(cur.ram / size), 0);
+    return this.blocks.filter((b) => b.ram >= size).reduce((acc, cur) => acc + Math.floor(cur.ram / size), 0);
   }
 
   get all(): ServerBlock[] {
@@ -208,8 +203,6 @@ export class RAMManager {
   }
 
   toString() {
-    return `RAMManager: \nTotal Ram: ${this.totalRam}\n${JSON.stringify(
-      this.blocks
-    )}`;
+    return `RAMManager: \nTotal Ram: ${this.totalRam}\n${JSON.stringify(this.blocks)}`;
   }
 }
