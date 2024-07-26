@@ -32,8 +32,9 @@ class Colors {
   }
 
   public wrap(msg: string) {
-    const str = `\x1b[${this.fgColorCode};${this.bgColorCode};${this.styleStack.join(';')}m${msg}\x1b[0m`;
+    const elements = [this.fgColorCode, this.bgColorCode, ...this.styleStack].filter((x) => x.length > 0);
 
+    const str = `\x1b[${elements.join(';')}m${msg}\x1b[0m`;
     this.fgColor = '';
     this.bgColor = '';
     this.styleStack = [];
@@ -58,12 +59,12 @@ class Colors {
   }
 
   public fg(color: string) {
-    this.fgColor = color;
+    this.fgColor = color.trim();
     return this;
   }
 
   public bg(color: string) {
-    this.bgColor = color;
+    this.bgColor = color.trim();
     return this;
   }
 
@@ -83,8 +84,12 @@ class Colors {
   }
 }
 
+const availableFGColors = [];
+const availableBGColors = [];
+
 function addFgColor(name: string, color: string) {
   if (Object.hasOwn(Colors.prototype, name)) return;
+  availableFGColors.push(name);
   Object.defineProperty(Colors.prototype, name, {
     get() {
       return this.fg(color);
@@ -94,6 +99,7 @@ function addFgColor(name: string, color: string) {
 
 function addBgColor(name: string, color: string) {
   if (Object.hasOwn(Colors.prototype, name + 'BG')) return;
+  availableBGColors.push(name);
   Object.defineProperty(Colors.prototype, name + 'BG', {
     get() {
       return this.bg(color);
@@ -104,8 +110,25 @@ function addBgColor(name: string, color: string) {
 const Color = new Colors();
 export { Color };
 export async function main(ns: NS) {
-  ns.tprint(Color.red.whiteBG.wrap('Hello, World!'));
-  ns.tprint(Color.red.whiteBG.underline.bold.wrap('Hello, World!'));
-  ns.tprint(Color.red.whiteBG.wrap('Hello, World!'));
-  ns.tprint(Color.unwrap(Color.underline.bold.red.whiteBG.wrap('Hello, World!')));
+  const output = [];
+  output.push(Color.bold.wrap('Hello, World!'));
+  output.push(Color.italic.wrap('Hello, World!'));
+  output.push(Color.underline.wrap('Hello, World!'));
+
+  output.push('\nForeground colors (text colors):\n');
+  for (const color of availableFGColors) {
+    output.push(Color[color].wrap('FG Color: ' + color));
+  }
+
+  output.push('\nBackground colors:\n');
+  for (const color of availableBGColors) {
+    output.push(Color[color + 'BG'].wrap('BG Color: ' + color));
+  }
+
+  output.push('\nCombination of colors and styles:\n');
+  output.push(Color.red.whiteBG.wrap('White background with red text'));
+  output.push(Color.red.whiteBG.underline.bold.wrap('White background with red text, underlined and bold'));
+  output.push(Color.unwrap(Color.underline.bold.red.whiteBG.wrap('Colors removed after they have been applied')));
+
+  ns.tprintf(output.join('\n'));
 }
