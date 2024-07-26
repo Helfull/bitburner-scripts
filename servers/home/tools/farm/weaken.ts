@@ -1,14 +1,22 @@
-import { setupDefault } from "../../cnc/lib";
+import { defineScript } from '@lib/flags';
 
 export async function main(ns: NS) {
+  const args = defineScript(ns, {
+    description: 'Weaken a target server until it is at its minimum security level',
+    flags: {
+      target: {
+        description: 'The target server to weaken',
+        defaultValue: '',
+      },
+    },
+  });
 
-  const args = setupDefault(ns, [
-    ['target', ''],
-  ]);
+  if (args.target === '') {
+    ns.tprint('ERROR | No target specified');
+    return;
+  }
 
-  const target = args['target'] as string;
-
-  while(ns.getServerSecurityLevel(target) > ns.getServerMinSecurityLevel(target)) {
-    await ns.weaken(target);
+  while (ns.getServerSecurityLevel(args.target) > ns.getServerMinSecurityLevel(args.target)) {
+    await ns.weaken(args.target);
   }
 }
