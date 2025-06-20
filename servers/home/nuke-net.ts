@@ -1,9 +1,9 @@
-
-import { getServers, killOldScript, setupDefault } from "./cnc/lib";
-import { nuke, tryPurchaseVirus } from "./cnc/nuke";
-import { BY_WEIGHT } from "./server/sort";
-import { HAS_NO_ADMIN_ACCESS } from "./server/filter";
-import { Color } from "./colors";
+import { getServers, killOldScript, setupDefault } from './cnc/lib';
+import { nuke, tryPurchaseVirus } from './cnc/nuke';
+import { BY_WEIGHT } from './server/sort';
+import { CAN_BE_NUKED, HAS_MAX_PORTS, HAS_NO_ADMIN_ACCESS } from './server/filter';
+import { Color } from './lib/colors';
+import { printTableObj } from '@lib/table';
 
 export async function main(ns: NS) {
   setupDefault(ns);
@@ -19,29 +19,53 @@ export async function main(ns: NS) {
       'relaySMTP.exe': await tryPurchaseVirus(ns, 'relaySMTP.exe'),
       'HTTPWorm.exe': await tryPurchaseVirus(ns, 'HTTPWorm.exe'),
       'SQLInject.exe': await tryPurchaseVirus(ns, 'SQLInject.exe'),
-    }
+    },
   };
 
-  ns.setTitle('Nuke Net');
-  ns.resizeTail(715, 80);
-  ns.moveTail(1010, 0);
+  ns.ui.setTailTitle('Nuke Net');
+  ns.ui.resizeTail(715, 320);
+  ns.ui.moveTail(1010, 0);
 
   while (true) {
-
     const viruses = Object.keys(stats.virus);
     for (const virus of viruses) {
-      stats.virus[virus] = await tryPurchaseVirus(ns, virus);
+      if (!stats.virus[virus]) {
+        stats.virus[virus] = await tryPurchaseVirus(ns, virus);
+      }
     }
 
     ns.clearLog();
-    ns.print(Object.keys(stats.virus).map(v => stats.virus[v] ? Color.bold.black.greenBG.wrap(' ' + v + ' ') : Color.bold.white.redBG.wrap(' ' + v + ' ')).join(''));
+    ns.print(
+      Object.keys(stats.virus)
+        .map((v) =>
+          stats.virus[v] ? Color.bold.black.greenBG.wrap(' ' + v + ' ') : Color.bold.white.redBG.wrap(' ' + v + ' '),
+        )
+        .join(''),
+    );
 
+    const canCrack = viruses.filter((v) => stats.virus[v]).length;
     const targets = getServers(ns)
+      .map((s) => ns.getServer(s))
       .filter(HAS_NO_ADMIN_ACCESS(ns))
-      .sort(BY_WEIGHT(ns))
-      .map(s => ns.getServer(s));
+      .filter(HAS_MAX_PORTS(ns, canCrack))
+      .filter(CAN_BE_NUKED(ns))
+      .sort(BY_WEIGHT(ns));
 
-    ns.print(`Targets: ${targets.map(s => `${s.hostname}(${s.openPortCount}/${s.numOpenPortsRequired})`).join(', ')}`);
+    if (targets.length > 0) {
+      ns.ui.resizeTail(715, 320);
+      printTableObj(
+        ns,
+        targets.map((s) => ({
+          name: s.hostname,
+          openPorts: s.openPortCount,
+          requiredPorts: s.numOpenPortsRequired,
+          requireHackSkill: s.requiredHackingSkill,
+        })),
+        ns.printf,
+      );
+    } else {
+      ns.ui.resizeTail(715, 60);
+    }
 
     for (const server of targets) {
       if (await nuke(ns, server)) {
@@ -49,6 +73,6 @@ export async function main(ns: NS) {
       }
     }
 
-    await ns.sleep(1000);
+    await ns.share();
   }
 }

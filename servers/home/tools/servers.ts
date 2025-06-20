@@ -11,7 +11,7 @@ export async function main(ns: NS) {
       upgrade: { description: 'Try to upgrade current servers to highest purchaseable tier.', defaultValue: false },
       purchase: {
         description: 'Try to purchase the highest purchaseable tier possible for X servers',
-        defaultValue: -2,
+        defaultValue: config.privateServers.maxCount,
       },
       loop: {
         description:
@@ -19,6 +19,7 @@ export async function main(ns: NS) {
         defaultValue: false,
       },
       debug: { description: 'Enable debug logging', defaultValue: false },
+      cli: { description: 'Use CLI output instead of tprintf', defaultValue: false },
     },
   });
 
@@ -61,6 +62,8 @@ export async function main(ns: NS) {
 
     manager.updateServers();
   } while (args.loop && !manager.finished);
+
+  log.info(`Finished managing servers.`);
 }
 
 class ServerManager {

@@ -1,8 +1,7 @@
-import { setupDefault } from "../cnc/lib";
-import { config } from "../config";
+import { setupDefault } from '../cnc/lib';
+import { config } from '../config';
 
 export async function main(ns: NS) {
-
   const args = setupDefault(ns);
 
   const hackNet = ns.hacknet;
@@ -11,12 +10,12 @@ export async function main(ns: NS) {
   ns.print(`Nodes: ${hackNet.numNodes()}`);
 
   while (true) {
-    ns.clearLog();
     ns.print(`Money: ${ns.formatNumber(getPlayerMoneyAvailable(ns))}`);
 
     const purchase = findCheapestPurchase(ns);
 
     if (purchase === null || purchase.cost > getPlayerMoneyAvailable(ns)) {
+      ns.clearLog();
       ns.print('No purchase available');
       await ns.sleep(1000);
       continue;
@@ -39,7 +38,7 @@ export async function main(ns: NS) {
         break;
     }
 
-    await ns.sleep(1000);
+    await ns.sleep(5);
   }
 }
 
@@ -56,7 +55,6 @@ function purchaseCondition(ns: NS, nodeIndex: number, cost: number): boolean {
   if (ns.hacknet.getNodeStats(nodeIndex).totalProduction < cost) {
     return false;
   }
-
 
   if (getPlayerMoneyAvailable(ns) < cost) {
     return false;
@@ -78,7 +76,7 @@ function purchaseNode(ns: NS) {
 function upgradeNodeLevels(ns: NS, nodeIndex: number) {
   const hackNet = ns.hacknet;
 
-  if (! purchaseCondition(ns, nodeIndex, hackNet.getLevelUpgradeCost(nodeIndex))) return;
+  if (!purchaseCondition(ns, nodeIndex, hackNet.getLevelUpgradeCost(nodeIndex))) return;
 
   const node = hackNet.getNodeStats(nodeIndex);
   ns.print(`Upgrading node ${nodeIndex} from ${node.level} to ${node.level + 1}`);
@@ -88,7 +86,7 @@ function upgradeNodeLevels(ns: NS, nodeIndex: number) {
 function upgradeNodeRam(ns: NS, nodeIndex: number) {
   const hackNet = ns.hacknet;
 
-  if (! purchaseCondition(ns, nodeIndex, hackNet.getRamUpgradeCost(nodeIndex))) return;
+  if (!purchaseCondition(ns, nodeIndex, hackNet.getRamUpgradeCost(nodeIndex))) return;
 
   const node = hackNet.getNodeStats(nodeIndex);
   ns.print(`Upgrading node ${nodeIndex} ram from ${node.ram} to ${node.ram + 1}`);
@@ -98,7 +96,7 @@ function upgradeNodeRam(ns: NS, nodeIndex: number) {
 function upgradeNodeCores(ns: NS, nodeIndex: number) {
   const hackNet = ns.hacknet;
 
-  if (! purchaseCondition(ns, nodeIndex, hackNet.getCoreUpgradeCost(nodeIndex))) return;
+  if (!purchaseCondition(ns, nodeIndex, hackNet.getCoreUpgradeCost(nodeIndex))) return;
 
   const node = hackNet.getNodeStats(nodeIndex);
   ns.print(`Upgrading node ${nodeIndex} cores from ${node.cores} to ${node.cores + 1}`);
@@ -118,10 +116,10 @@ function getPlayerMoneyAvailable(ns: NS) {
 }
 
 type Purchase = {
-  type: 'node'| 'level' | 'ram' | 'core';
+  type: 'node' | 'level' | 'ram' | 'core';
   index: number;
   cost: number;
-}
+};
 
 function findCheapestPurchase(ns: NS): Purchase {
   const hackNet = ns.hacknet;

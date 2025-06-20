@@ -1,34 +1,26 @@
-import { setupDefault } from "./cnc/lib";
+import { setupDefault } from './cnc/lib';
+import { StartUpUtil } from '@/servers/home/startup-tools/util';
 
+export async function main(ns: NS)
+{
+  ns.tprint('Starting up home scripts');
 
-export async function main(ns: NS) {
   const args = setupDefault(ns);
-  ns.clearLog();
-  ns.print('Starting up');
-  await start(ns, 'cnc/main.js');
 
-  await start(ns, 'nuke-net.js');
-  await start(ns, 'prep-all.js');
+  const startUp = new StartUpUtil(ns);
 
-  await start(ns, 'tools/hacknet.js');
+  startUp.logger.info('Starting up scripts');
 
-  ns.print('Waiting for private server');
-  while (ns.getPurchasedServers().length === 0) {
-    await ns.sleep(10000);
-  }
+  await startUp.start(ns, 'nuke-net.js');
 
-  await start(ns, 'secWatch.js');
-  await start(ns, 'moneyWatch.js');
+  await startUp.start(ns, 'hack-net.js', '--loop');
+
+  await startUp.start(ns, 'share-on-idle.js');
+
+  startUp.startScript('startup-tools/servers.starter.js');
+
+  startUp.startScript('startup-tools/stock.starter.js');
+
+  // startUp.startScript('startup-tools/ui.starter.js');
 }
 
-async function start(ns: NS , script: string) {
-
-  if (ns.isRunning(script)) {
-    ns.print(`Already running ${script}`);
-    return;
-  }
-
-  ns.print(`Starting ${script}`);
-  ns.run(script, 1);
-  await ns.sleep(1000);
-}

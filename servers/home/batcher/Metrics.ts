@@ -142,7 +142,7 @@ export class Metrics {
     return Math.max(Math.ceil((grwThreads * SEC_INC_GRW) / SEC_DEC_WKN), 1);
   }
 
-  calcBatch(target: string, greed = 0.1): MetricsData {
+  calcBatch(target: string, greed = 0.1, ramLimit: number | false = false): MetricsData {
     this.log.debug('Calculating metrics for %s', target);
     this.log.debug('Greed: %s', greed);
 

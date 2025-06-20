@@ -1,6 +1,18 @@
 export const config = {
 
+  progression: {
+    backdoorsRequired: [
+      'CSEC',
+      'avmnite-02h',
+      'I.I.I.I',
+      'run4theh111z',
+      'the-hub',
+      'w0r1d_d43m0n',
+    ],
+  },
+
   cncPort: 5280,
+  rmmPort: 5281,
 
   // Which server is the hacklvl farm
   farmTarget: ['foodnstuff', 'n00dles', 'sigma-cosmetics', 'joesguns', 'hong-fang-tea'],
@@ -9,6 +21,9 @@ export const config = {
 
   // The prefix for private servers
   prefixPrivate: 'pserv-',
+  privateServers: {
+    maxCount: -2,
+  },
 
   // Max ram tier,
   maxRamTier: 20,
@@ -41,7 +56,7 @@ export const config = {
 
   // Proto
   proto: {
-    greed: 0.8,
+    greed: 0.5,
   },
 
   hacknet: {

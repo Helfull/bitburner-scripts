@@ -1,15 +1,9 @@
-import { getServers, printTableObj, setupDefault } from "../cnc/lib";
-import {
-  HAS_ADMIN_ACCESS,
-  HAS_MONEY,
-  IS_NOT_HOME,
-  IS_NOT_PRIVATE,
-  IS_PREPPED,
-  NEEDS_PREP,
-} from "../server/filter";
-import { BY_WEIGHT } from "../server/sort";
-import { Logger } from "../tools/logger";
-import { RAMManager } from "./RamManager";
+import { printTableObj } from '@lib/table';
+import { getServers, setupDefault } from '../cnc/lib';
+import { HAS_ADMIN_ACCESS, HAS_MONEY, IS_NOT_HOME, IS_NOT_PRIVATE, IS_PREPPED, NEEDS_PREP } from '../server/filter';
+import { BY_WEIGHT } from '../server/sort';
+import { Logger } from '../tools/logger';
+import { RAMManager } from './RamManager';
 
 export class ProtoManager {
   constructor(protected readonly ns: NS, protected log = new Logger(ns)) {}
@@ -31,7 +25,7 @@ export class ProtoManager {
         .filter((target) => !prepPids.some((p) => p.server === target))
         .forEach((server) => {
           this.log.info(`Prepping ${server}`);
-          const pid = this.ns.run("prep.js", 1, server);
+          const pid = this.ns.run('prep.js', 1, server);
 
           if (pid === 0) {
             this.log.error(`Failed to start prep on ${server}`);
@@ -41,10 +35,7 @@ export class ProtoManager {
           prepPids.push({ server, pid });
         });
 
-      const protoTargets = targets
-        .filter(IS_PREPPED(this.ns))
-        .sort(BY_WEIGHT(this.ns))
-        .slice(0, 10);
+      const protoTargets = targets.filter(IS_PREPPED(this.ns)).sort(BY_WEIGHT(this.ns)).slice(0, 10);
 
       // Kill all proto pids that are not in the list of targets
       for (const pid of protoPids) {
@@ -65,7 +56,7 @@ export class ProtoManager {
         }
 
         this.log.info(`Protoing ${server}`);
-        const pid = this.ns.run("proto-batch.js", 1, server);
+        const pid = this.ns.run('proto-batch.js', 1, server);
 
         if (pid === 0) {
           this.log.error(`Failed to start proto on ${server}`);

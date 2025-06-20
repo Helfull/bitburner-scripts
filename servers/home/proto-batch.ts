@@ -1,23 +1,40 @@
-import { Metrics } from "./batcher/Metrics";
-import { ProtoBatcher } from "./batcher/ProtoBatcher";
-import { RAMManager } from "./batcher/RamManager";
-import { getServers, setupDefault } from "./cnc/lib";
-import { config } from "./config";
-import { BY_RAM_USAGE } from "./server/sort";
-import { Logger } from "./tools/logger";
+import { Metrics } from './batcher/Metrics';
+import { ProtoBatcher } from './batcher/ProtoBatcher';
+import { RAMManager } from './batcher/RamManager';
+import { getServers, setupDefault } from './cnc/lib';
+import { config } from './config';
+import { BY_RAM_USAGE } from './server/sort';
+import { Logger } from './tools/logger';
+import { Lock } from '@lib/lock';
 
 export async function main(ns: NS) {
+
+  ns.printf('Started');
+  const log: Logger = new Logger(ns);
+
   const target = ns.args[0] as string;
+  const lock = new Lock(ns, target, log);
+
   const args = setupDefault(ns);
 
   ns.clearLog();
 
+  if (lock.isLocked()) {
+    ns.exit();
+  }
+
+  await lock.lock();
+
+  ns.atExit(() => {
+    lock.unlock();
+  });
+
   const proto = new ProtoBatcher(
     ns,
     new RAMManager(ns, getServers(ns).sort(BY_RAM_USAGE(ns)).map(ns.getServer)),
-    new Metrics(ns),
+    new Metrics(ns, 0),
     new Logger(ns),
-    config.proto
+    config.proto,
   );
 
   await proto.loop(target);

@@ -1,9 +1,8 @@
-import { config } from "../config";
-import { Logger } from "../tools/logger";
-import { setupDefault } from "./lib";
+import { config } from '../config';
+import { Logger } from '../tools/logger';
+import { setupDefault } from './lib';
 
 export async function main(ns: NS) {
-  ns.tail();
   const args = setupDefault(ns);
   ns.clearLog();
 
@@ -13,33 +12,55 @@ export async function main(ns: NS) {
 
   let messageLog = [];
 
+  ns.print('Starting up main listener');
+
   while (true) {
-    if (handle.empty()) {
+    while (handle.empty()) {
       await ns.sleep(100);
-      continue;
     }
 
     while (!handle.empty()) {
-      const message = JSON.parse(handle.read());
-      log.info("%s %s %s %s %s", ...formatMessage(ns, message));
+      await ns.sleep(10);
+      let message = handle.read();
+
+      if (typeof message === 'string') {
+        try {
+          message = JSON.parse(handle.read());
+        } catch (e) {
+          log.error('Failed to parse message %s', message);
+        }
+      }
+
+      try {
+        const [logMessage, ...messageArgs] = formatMessage(ns, message);
+
+        if ((messageArgs?.length || 0) === 0) {
+          log.info(logMessage);
+        } else {
+          log.info(logMessage, ...messageArgs);
+        }
+      } catch (e) {
+        log.error('Failed to s format message %s', JSON.stringify(message));
+      }
+
       if (message?.timings !== undefined) {
         const timings = message.timings;
-        log.info("Timings: %s", JSON.stringify(message.timings, null, 2));
+        log.info('Timings: %s', JSON.stringify(message.timings, null, 2));
         if (timings.start !== timings.expectedStart) {
           log.warn(
-            "Expected start time %s, actual start time %s, diff %s",
+            'Expected start time %s, actual start time %s, diff %s',
             ns.tFormat(timings.expectedStart),
             ns.tFormat(timings.start),
-            ns.tFormat(timings.start - timings.expectedStart)
+            ns.tFormat(timings.start - timings.expectedStart),
           );
         }
 
         if (timings.end !== timings.expectedEnd) {
           log.warn(
-            "Expected end time %s, actual end time %s, diff %s",
+            'Expected end time %s, actual end time %s, diff %s',
             ns.tFormat(timings.expectedEnd),
             ns.tFormat(timings.end),
-            ns.tFormat(timings.end - timings.expectedEnd)
+            ns.tFormat(timings.end - timings.expectedEnd),
           );
         }
       }
@@ -48,24 +69,28 @@ export async function main(ns: NS) {
   }
 }
 
-function formatMessage(ns: NS, msgData: Record<any, any>) {
-  let result = "";
+function formatMessage(ns: NS, msgData: Record<any, any>): any[] {
+  let result = '';
 
   switch (msgData.type) {
-    case "grow":
+    case 'grow':
       result = ns.formatPercent(msgData.result - 1);
       break;
-    case "hack":
+    case 'hack':
       result = ns.formatNumber(msgData.result);
       break;
-    case "weaken":
+    case 'weaken':
       result = ns.formatPercent(msgData.result);
       break;
+
+    default:
+      return [msgData];
   }
 
   return [
-    msgData.job?.args?.batchId || "N/A",
-    msgData.pid || "N/A",
+    '%s %s %s %s %s',
+    msgData.job?.args?.batchId || 'N/A',
+    msgData.pid || 'N/A',
     msgData.target,
     msgData.type,
     result,

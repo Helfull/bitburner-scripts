@@ -50,7 +50,7 @@ export const createMountingPoint = (ns: NS, mpConfig: {closeOnExit:boolean, tail
 
           if (mpConfig.closeOnExit) {
             cleanupCallbacks.push(() => {
-               ns.closeTail();
+               ns.ui.closeTail();
             });
           }
         }

@@ -89,6 +89,7 @@ export function printTable(ns: NS, table: { [key: string]: any[] }, output = ns.
   debugger;
   output(
     [
+      '',
       // Top border
       cornerTopLeft +
         header

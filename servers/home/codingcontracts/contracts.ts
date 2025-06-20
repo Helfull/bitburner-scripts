@@ -3,6 +3,7 @@ import { HammingCodeSolver } from '@/servers/home/codingcontracts/solvers/Hammin
 import { OverlappingsIntervalsSolver } from '@/servers/home/codingcontracts/solvers/OverlappingIntervals';
 import { SubarrayWithMaximumSumSolver } from '@/servers/home/codingcontracts/solvers/SubarrayWithMaximumSum';
 import { CeaserCipherSolver } from '@/servers/home/codingcontracts/solvers/encryption.CeaserCipher';
+import { FindSquareRootSolver } from '@/servers/home/codingcontracts/solvers/SquareRoot';
 
 export type ContractType =
   | 'Algorithmic Stock Trader I'
@@ -29,7 +30,8 @@ export type ContractType =
   | 'Total Ways to Sum'
   | 'Unique Paths in a Grid I'
   | 'Unique Paths in a Grid II'
-  | 'Merge Overlapping Intervals';
+  | 'Merge Overlapping Intervals'
+  | 'Square Root';
 
 export type SolverCallback = (data: unknown) => any;
 export type Test = () => void;
@@ -45,4 +47,5 @@ export const ContractSolvers: Partial<Record<ContractType, Solver>> = {
   'Subarray with Maximum Sum': SubarrayWithMaximumSumSolver,
   'HammingCodes: Encoded Binary to Integer': HammingCodeSolver,
   'Merge Overlapping Intervals': OverlappingsIntervalsSolver,
+  'Square Root': FindSquareRootSolver
 };

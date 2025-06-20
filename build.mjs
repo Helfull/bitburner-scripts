@@ -15,6 +15,7 @@ const createContext = async () => await context({
       port: 12525,
       types: 'NetscriptDefinitions.d.ts',
       mirror: {
+        'local/path': ['home']
       },
       distribute: {
       }

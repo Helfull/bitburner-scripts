@@ -4,7 +4,7 @@ import { RAMManager } from './RamManager';
 export class ProtoBatcher extends BatchRunner {
   async loop(target: string) {
     this.log.info('Target: %s', target);
-    this.ns.setTitle(this.getTitle(target, 0, 0));
+    this.ns.ui.setTailTitle(this.getTitle(target, 0, 0));
     let batchCount = 0;
     let batchesSinceLastError = 0;
     while (true) {
@@ -20,14 +20,14 @@ export class ProtoBatcher extends BatchRunner {
 
         this.log.info('Batch expected to finish in %s', this.ns.tFormat(finishTime));
 
-        await this.wait();
+        await this.ns.sleep(1000);
 
         batchCount++;
         batchesSinceLastError++;
-        this.ns.setTitle(this.getTitle(target, batchCount, batchesSinceLastError));
+        this.ns.ui.setTailTitle(this.getTitle(target, batchCount, batchesSinceLastError));
       } catch (e) {
         if (e.name === '_RunnerError') {
-          this.ns.setTitle(
+          this.ns.ui.setTailTitle(
             this.ns.sprintf('%s, Error: %s', this.getTitle(target, batchCount, batchesSinceLastError), e.message),
           );
           batchesSinceLastError = 0;

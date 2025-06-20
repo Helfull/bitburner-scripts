@@ -6,7 +6,7 @@ export type Schema = [string, string | number | boolean | string[]][];
 
 export function setupDefault(ns: NS, schema?: Schema) {
   const args = flags(ns, schema);
-  ns.disableLog('ALL');
+
   setupTail(ns, args);
 
   return args;
@@ -18,8 +18,8 @@ export function flags(ns: NS, schema?: Schema) {
 
 export function setupTail(ns: NS, args: { [key: string]: ScriptArg | string[] }) {
   if (args.tail) {
-    ns.tprintRaw(`Tailing lsogs`);
-    ns.tail();
+    ns.tprintRaw(`Tailing logs`);
+    ns.ui.openTail();
   }
 }
 
@@ -31,7 +31,6 @@ export function killOldScript(ns: NS, scriptName: string, server: string) {
   const script = ns.getRunningScript(scriptName, server);
 
   if (script === null) {
-    ns.tprint(`Failed to get running script`);
     return;
   }
 
@@ -115,54 +114,6 @@ export function getServers(ns: NS): string[] {
   }
 
   return servers;
-}
-
-export function printTableObj(ns: NS, tableRows: { [key: string]: any }[], output = ns.tprint) {
-  if (tableRows.length === 0) return;
-
-  const table = {};
-
-  for (const row of tableRows) {
-    for (const key in row) {
-      if (!table[key]) table[key] = [];
-      table[key].push(row[key]);
-    }
-  }
-
-  printTable(ns, table, output);
-}
-
-export function printTable(ns: NS, table: { [key: string]: any[] }, output = ns.tprint) {
-  let strip = (v: string) => v;
-  if (typeof stripColors === 'function') {
-    strip = stripColors;
-  }
-
-  const header = Object.keys(table);
-  const cols = Object.values(table).map((col) => col.map((v) => v?.toString() || ''));
-  const rows = cols[0].map((_, i) => cols.map((col) => col[i]));
-
-  const colWidths = header.map((columnHeader, i) => {
-    const header = strip(columnHeader);
-    const headerWidth = header.length;
-
-    const rowsStr = rows.map((row) => strip(row[i] || ''));
-    const colsWidth = rowsStr.map((row) => row.length);
-
-    const result = Math.max(headerWidth, ...(colsWidth || []));
-    return result;
-  });
-
-  const makeCell = (v: string, i: number) => ''.padStart(colWidths[i] - strip(v || '').length, ' ') + (v || '');
-
-  output(
-    [
-      '',
-      header.map((v, i) => makeCell(v, i)).join(' | '),
-      header.map((_, i) => ''.padStart(colWidths[i], '-')).join(' | '),
-      rows.map((row) => row.map((v, i) => makeCell(v, i)).join(' | ')).join('\n'),
-    ].join('\n'),
-  );
 }
 
 // Returns a weight that can be used to sort servers by hack desirability

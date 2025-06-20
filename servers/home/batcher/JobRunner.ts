@@ -8,7 +8,7 @@ import { JobWeaken } from './jobs/weaken';
 export class RunnerError extends Error {
   constructor(message: string) {
     super(message);
-    this.name = this.constructor.name;
+    this.name = '_RunnerError';
   }
 
   static failToExec(script: string, args: string) {
@@ -24,6 +24,13 @@ export class RunnerError extends Error {
     return new RunnerError(
       `Failed to assign block ${JSON.stringify(block, null, 2)} from ${JSON.stringify(serverBlocks, null, 2)}`,
     );
+  }
+}
+
+export class RAMMissingError extends RunnerError {
+  constructor(message: string) {
+    super(message);
+    this.name = '_RAMMissingError';
   }
 }
 
@@ -98,12 +105,10 @@ export class JobRunner {
     if (job.threads <= 0) return true;
     const block = job.block;
     this.log.info('Assigning block: %s', JSON.stringify(block));
-    await this.ns.sleep(1000);
     const jobAssignedBlocks: AssignedBlock | false = this.rmm.assign(block);
-    await this.ns.sleep(1000);
 
     if (jobAssignedBlocks === false) {
-      throw RunnerError.failToAssign(block, this.rmm.all);
+      throw RAMMissingError.failToAssign(block, this.rmm.all);
     }
 
     this.ns.printf(
@@ -130,7 +135,7 @@ export class JobRunner {
     for (const ramBlock of jobAssignedBlocks.ramBlocks) {
       this.log.info('Running %s on %s with %s threads', jobRunning.script, ramBlock.server, ramBlock.threads);
 
-      this.ns.scp(job.script, block.server, 'home');
+      this.ns.scp(job.script, ramBlock.server, 'home');
 
       const pid = this.ns.exec(
         jobRunning.script,
@@ -142,7 +147,7 @@ export class JobRunner {
 
       if (pid === 0) {
         this.log.error(
-          '[%s][JOB_RUNNER_EXEC_SCRIPT_FAILED] Failed to exec %s with %s on %s (Threads: %s)',
+          '[%s][JOB_RUNNER_EXEC_SCRIPT_FAILED] Failed to exec %s with "%s" on %s (Threads: %s)',
           this.ns.pid,
           jobRunning.script,
           JSON.stringify(jobRunning.args),

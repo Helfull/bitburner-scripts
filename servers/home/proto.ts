@@ -16,7 +16,7 @@ export async function main(ns: NS) {
 
   ns.tprint(JSON.stringify(targets, null, 2));
 
-  ns.setTitle(ns.sprintf('Targetting %s', targets.join(', ')));
+  ns.ui.setTailTitle(ns.sprintf('Targetting %s', targets.join(', ')));
 
   for (const target of targets) {
     ns.tprint(`Targetting ${target}`);

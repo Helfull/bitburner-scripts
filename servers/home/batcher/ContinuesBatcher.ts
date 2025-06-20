@@ -1,12 +1,25 @@
+import { getServers } from '@/servers/home/cnc/lib';
 import { BatchRunner } from './BatchRunner';
+import {
+  HAS_MAX_MONEY,
+  HAS_MIN_SECURITY,
+  HAS_MONEY,
+  IS_GOOD_TARGET,
+  IS_HACKABLE,
+  IS_NOT_HOME,
+  IS_NOT_PRIVATE,
+} from '@/servers/home/server/filter';
+import { BY_WEIGHT } from '@/servers/home/server/sort';
 
 export class ContinuesBatcher extends BatchRunner {
-  async loop(target: string) {
+  private targettingThreadHandle: number;
+
+  async loop(target: string, loop = true) {
     this.log.info('Target: %s', target);
-    this.ns.setTitle(this.getTitle(target, 0, 0));
+    this.ns.ui.setTailTitle(this.getTitle(target, 0, 0));
     let batchCount = 0;
     let batchesSinceLastError = 0;
-    while (true) {
+    do {
       await this.ns.sleep(200);
       try {
         this.log.info('Batch %s', batchCount);
@@ -16,24 +29,24 @@ export class ContinuesBatcher extends BatchRunner {
         this.log.info('Batch expected to finish in %s', this.ns.tFormat(finishTime));
         batchCount++;
         batchesSinceLastError++;
-        this.ns.setTitle(this.getTitle(target, batchCount, batchesSinceLastError));
+        this.ns.ui.setTailTitle(this.getTitle(target, batchCount, batchesSinceLastError));
       } catch (e) {
         if (e.name === '_RunnerError') {
           this.log.error('[%s][CONTINUES_RUNNER_ERROR] %s', this.ns.pid, e.message);
-          this.ns.setTitle(
+          this.ns.ui.setTailTitle(
             this.ns.sprintf('%s, Error: %s', this.getTitle(target, batchCount, batchesSinceLastError), e.message),
           );
           batchesSinceLastError = 0;
           await this.ns.sleep(100);
         } else {
-          this.log.error('[%s][CONTINUES_RUNNER_ERROR_UNKOWN] %s', this.ns.pid, e.message);
+          this.log.error('[%s][%s][CONTINUES_RUNNER_ERROR_UNKOWN] %s', e.name, this.ns.pid, e.message);
           this.log.error(
             JSON.stringify({ error: { name: e.name, message: e.message, stack: e.stack }, pid: this.ns.pid }),
           );
           throw e;
         }
       }
-    }
+    } while (loop);
   }
 
   protected getTitle(target: string, batchCount: number, batchesSinceLastError: number) {
@@ -49,58 +62,27 @@ export class ContinuesBatcher extends BatchRunner {
     );
   }
 
-  protected async wait() {
-    this.log.info('Waiting for finish signal');
+  public async autoTarget() {
+    while (true) {
+      await this.ns.sleep(100);
 
-    do {
-      await this.ns.sleep(10);
-      const portData = this.ns.readPort(this.ns.pid);
+      const targets = getServers(this.ns)
+        .filter(IS_NOT_PRIVATE(this.ns))
+        .filter(IS_NOT_HOME(this.ns))
+        .filter(HAS_MONEY(this.ns))
+        .filter(IS_GOOD_TARGET(this.ns))
+        .filter(IS_HACKABLE(this.ns))
+        .filter(HAS_MAX_MONEY(this.ns))
+        .filter(HAS_MIN_SECURITY(this.ns))
+        .sort(BY_WEIGHT(this.ns));
 
-      if (portData === 'NULL PORT DATA') {
-        await this.ns.sleep(1);
+      if (targets.length === 0) {
+        this.ns.ui.setTailTitle('No targets found, sleeping');
+        await this.ns.share();
         continue;
       }
-      try {
-        switch (portData.type) {
-          case 'finish':
-            this.log.success('Finish signal received');
-            return;
-          case 'delay':
-            this.log.info(
-              'Delay signal received job %s is delayed by %s and finishes in %s',
-              portData.job.script,
-              portData.delay,
-              this.ns.tFormat(portData.delay + portData.job.timings.duration, true),
-            );
-            continue;
-          case 'hack':
-          case 'grow':
-          case 'weaken':
-            this.log.info('Received %s signal with result: %s', portData.type, portData.result);
-            continue;
-          case 'late':
-            this.log.warn(
-              'Late signal received job %s is late by %s and finishes in %s',
-              portData.job.script,
-              portData.delay,
-              this.ns.tFormat(portData.delay + portData.job.timings.duration, true),
-            );
-            continue;
-          default:
-            this.log.info('Port data: %s', JSON.stringify(portData, null, 2));
-        }
-      } catch (e) {
-        this.log.error(
-          'Failed to parse port data: %s',
-          JSON.stringify({
-            error: {
-              message: e.message,
-              stack: e.stack,
-            },
-            portData,
-          }),
-        );
-      }
-    } while (true);
+      const target = targets.shift();
+      await this.loop(target, false);
+    }
   }
 }
