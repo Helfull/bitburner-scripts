@@ -8,26 +8,23 @@ import { Logger } from './tools/logger';
 import { Lock } from '@lib/lock';
 
 export async function main(ns: NS) {
-
-  ns.printf('Started');
   const log: Logger = new Logger(ns);
-
   const target = ns.args[0] as string;
   const lock = new Lock(ns, target, log);
 
   const args = setupDefault(ns);
 
-  ns.clearLog();
-
   if (lock.isLocked()) {
+    log.warn('Server is locked!')
     ns.exit();
+    return;
   }
 
   await lock.lock();
 
   ns.atExit(() => {
     lock.unlock();
-  });
+  }, 'unlock');
 
   const proto = new ProtoBatcher(
     ns,

@@ -86,7 +86,6 @@ export function printTable(ns: NS, table: { [key: string]: any[] }, output = ns.
   const middleTop = tableConfig.divider.middle.top;
   const middleBottom = tableConfig.divider.middle.bottom;
 
-  debugger;
   output(
     [
       '',

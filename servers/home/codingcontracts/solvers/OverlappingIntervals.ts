@@ -3,7 +3,6 @@ import { assertSame, testSame, testsSame } from '@/servers/home/codingcontracts/
 import { Color } from '@lib/colors';
 
 export const OverlappingsIntervals = (intervals: number[][]): number[][] => {
-  debugger;
   const fixedIntervals: number[][] = [];
   let foundOverlaps = false;
 

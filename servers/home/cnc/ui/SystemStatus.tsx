@@ -7,9 +7,13 @@ import { useInterval } from "@lib/hooks/TimerHook";
 import { useWindow } from "@lib/hooks/WindowHelper";
 import { BooleanBox } from "@lib/ui/BooleanBox";
 import React, { useContext, useEffect, useState } from "react";
+import { Tabs } from '@lib/ui/Tabs';
+import { execCommand } from '@lib/utils';
+import { createServerTree } from '@lib/serverTree';
+import { IS_NOT_PRIVATE } from '@/servers/home/server/filter';
 
-export function StatusCell({active, name, pid} : {active?: boolean, name: string, pid?: number}) {
-  return <BooleanBox value={active}>
+export function StatusCell({active, name, pid, onClick} : {active?: boolean, name: string, pid?: number, onClick?: () => void}) {
+  return <BooleanBox value={active} onClick={onClick}>
     <div style={{
       padding: '5px',
       display: 'flex',
@@ -18,6 +22,7 @@ export function StatusCell({active, name, pid} : {active?: boolean, name: string
       justifyContent: 'center',
       alignItems: 'center',
       boxSizing: 'border-box',
+      cursor: 'pointer',
     }}>
       <span>{name}</span>
       {pid ? <span style={{
@@ -83,7 +88,7 @@ export function SystemStatus() {
 
   const [messages, setMessages] = useState<Messages[]>([]);
   const [status, setStatus] = useState<{[key: string]: number}>({});
-  const [backdoors, setBackdoors] = useState<{[key: string]: boolean}>({});
+  const [backdoors, setBackdoors] = useState<{[key: string]: { value: any, onClick: () => void}}>({});
 
   useInterval(() => {
     const portHandle = ns.getPortHandle(config.cncPort);
@@ -93,31 +98,42 @@ export function SystemStatus() {
       });
     }
 
+
     setStatus({
       'prep-all': isRunningByName(ns, 'prep-all.js', 'home'),
       'nuke-net': isRunningByName(ns, 'nuke-net.js', 'home'),
-      'hacknet': isRunningByName(ns, 'tools/hacknet.js', 'home'),
+      'hacknet': isRunningByName(ns, 'hack-net.js', 'home'),
       'servers': isRunningByName(ns, 'tools/servers.js', 'home'),
-      'secWatch': isRunningByName(ns, 'secWatch.js', 'home'),
-      'moneyWatch': isRunningByName(ns, 'moneyWatch.js', 'home'),
     });
 
+    const tree = createServerTree(ns, (servers: string[]) => servers.filter(IS_NOT_PRIVATE(ns)));
+
+    const cString = (target: string) => tree.reversePathTo(target).reduce((prev, cur) => prev + ' ;connect ' + cur, '') + ' ;backdoor'
+
     setBackdoors({
-      'avmnite-02h': ns.getServer('avmnite-02h').backdoorInstalled,
-      'I.I.I.I': ns.getServer('I.I.I.I').backdoorInstalled,
-      'run4theh111z': ns.getServer('run4theh111z').backdoorInstalled,
+      'avmnite-02h': { value: ns.getServer('avmnite-02h').backdoorInstalled, onClick: () => execCommand(cString('avmnite-02h')), },
+      'I.I.I.I': { value: ns.getServer('I.I.I.I').backdoorInstalled, onClick: () => execCommand(cString('I.I.I.I')), },
+      'run4theh111z': { value: ns.getServer('run4theh111z').backdoorInstalled, onClick: () => execCommand(cString('run4theh111z')), },
     });
   }, 1000, []);
 
-  return <div id="system-status" style={{
-    display: "flex",
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: "5px",
-    padding: "5px",
-    boxSizing: "border-box",
-  }}>
-    <div style={{height: '32px', width: '100%'}}>
+  const tabs = {
+    'Messages': <div style={{width:'100%'}}>
+      <span>Port messages</span>
+      <MessageLog messages={messages} />
+    </div>,
+    'Backdoors': <div>
+      <span>Backdoors</span>
+        {Object.entries(backdoors).map(([key, installed]) => (
+          <div key={key}>
+            <StatusCell active={installed.value} name={key} onClick={installed.onClick} />
+          </div>
+        ))}
+      </div>
+  };
+
+  return <div id="system-status">
+    <div style={{height: '32px', width: '100%', display: 'flex', flexDirection: 'column'}}>
       <div
         style={{
           display: "grid",
@@ -131,18 +147,7 @@ export function SystemStatus() {
           <StatusCell active={pid !== null} name={key} pid={pid} />
         ))}
       </div>
-    </div>
-    <div style={{maxHeight: '100%', height: '90%', width: '80%'}}>
-      <span>Port messages</span>
-      <MessageLog messages={messages} />
-    </div>
-    <div style={{ width: 'calc(20% - 5px)'}}>
-        <span>Backdoors</span>
-        {Object.entries(backdoors).map(([key, installed]) => (
-          <div key={key}>
-            <StatusCell active={installed} name={key} />
-          </div>
-        ))}
+      <Tabs tabs={tabs} />
     </div>
   </div>;
 }

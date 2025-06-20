@@ -8,7 +8,7 @@ export const win: Window = eval('window');
 export const bbRoot = () => doc.querySelector('#root') as HTMLElement;
 
 // The terminal input
-export const bbTerminalInput = () => doc.querySelector('#terminal-input') as HTMLInputElement;
+export const bbTerminalInput = () => doc.getElementById('terminal-input') as HTMLInputElement;
 
 // The main content container of the Bitburner UI
 export const bbContainer = () => doc.querySelector('#root > div.MuiBox-root.css-1ik4laa') as HTMLElement;
@@ -29,11 +29,3 @@ export const bbPageButtons = () =>
   bbDrawer().querySelectorAll<HTMLElement>(
     '.MuiButtonBase-root.MuiListItem-root.MuiListItem-gutters.MuiListItem-padding.MuiListItem-button',
   );
-
-export async function main() {
-  console.log({ bbRoot: bbRoot() });
-  console.log({ bbContainer: bbContainer() });
-  console.log({ bbContentContainer: bbContentContainer() });
-  console.log({ bbDrawer: bbDrawer() });
-  console.log({ bbNetwork: bbNetwork() });
-}

@@ -94,6 +94,8 @@ export class Prepper extends JobRunner {
         finished = true;
       } catch (e) {
         this.log.error('Failed to execute prepper: %s', e);
+      } finally {
+        await this.ns.sleep(1000);
       }
     } while (!finished);
 

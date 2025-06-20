@@ -3,9 +3,17 @@ import { ScriptArg } from '../../../NetscriptDefinitions';
 import { config } from '../config';
 
 export type Schema = [string, string | number | boolean | string[]][];
-
-export function setupDefault(ns: NS, schema?: Schema) {
+export type Options = {
+  disable: ('ALL' | keyof NS)[]
+}
+export function setupDefault(ns: NS, schema?: Schema, options: Options = {
+  disable: ['ALL']
+}) {
   const args = flags(ns, schema);
+
+  for(let disable of options.disable) {
+    ns.disableLog(disable);
+  }
 
   setupTail(ns, args);
 

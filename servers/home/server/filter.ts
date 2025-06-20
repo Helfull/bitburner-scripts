@@ -25,7 +25,7 @@ export const HAS_NOT_MAX_MONEY = (ns: NS) => (server: ServerString) => !HAS_MAX_
 export const HAS_MIN_SECURITY = (ns: NS) => (server: ServerString) =>
   ns.getServerSecurityLevel(getHostname(ns, server)) <= ns.getServerMinSecurityLevel(getHostname(ns, server));
 export const HAS_NOT_MIN_SECURITY = (ns: NS) => (server: ServerString) => !HAS_MIN_SECURITY(ns)(server);
-export const HAS_AVAILABLE_RAM = (ns: NS) => (server: ServerString, ram: number) => HAS_RAM_AVAILABLE(ns)(server) && ramAvailable(ns, server) > ram;
+export const HAS_AVAILABLE_RAM = (ns: NS, ram: number) => (server: ServerString) => HAS_RAM_AVAILABLE(ns)(server) && ramAvailable(ns, server) > ram;
 export const IS_PRIVATE = (ns: NS) => (server: ServerString) =>
   getHostname(ns, server).startsWith(config.prefixPrivate);
 export const IS_NOT_PRIVATE = (ns: NS) => (server: ServerString) => !IS_PRIVATE(ns)(server);

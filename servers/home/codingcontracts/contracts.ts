@@ -4,6 +4,7 @@ import { OverlappingsIntervalsSolver } from '@/servers/home/codingcontracts/solv
 import { SubarrayWithMaximumSumSolver } from '@/servers/home/codingcontracts/solvers/SubarrayWithMaximumSum';
 import { CeaserCipherSolver } from '@/servers/home/codingcontracts/solvers/encryption.CeaserCipher';
 import { FindSquareRootSolver } from '@/servers/home/codingcontracts/solvers/SquareRoot';
+import { SpiralMatrixSolver } from '@/servers/home/codingcontracts/solvers/SpiralMatrix';
 
 export type ContractType =
   | 'Algorithmic Stock Trader I'
@@ -47,5 +48,6 @@ export const ContractSolvers: Partial<Record<ContractType, Solver>> = {
   'Subarray with Maximum Sum': SubarrayWithMaximumSumSolver,
   'HammingCodes: Encoded Binary to Integer': HammingCodeSolver,
   'Merge Overlapping Intervals': OverlappingsIntervalsSolver,
-  'Square Root': FindSquareRootSolver
+  'Square Root': FindSquareRootSolver,
+  'Spiralize Matrix': SpiralMatrixSolver,
 };

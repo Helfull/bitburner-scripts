@@ -1,7 +1,0 @@
-This file contains the list of potential API break. A pattern was used to look through all your files and note the spots where you might have a problem. Not everything here is broken./ns\.scp/g
-scp arguments were switch, it is now scp(files, destination, optionally_source). If you were using 2 argument (not 3) this doesn't affect you.
-
-	deploy.js
-		Line 27 await ns.scp(script, ns.getHostname(), host);
-
-
