@@ -7,7 +7,7 @@ export function execCommand(cmd: string) {
   // Perform an onChange event to set some internal values.
   terminalInput[handler].onChange({ target: { value: cmd } });
   // Simulate an enter press
-    terminalInput[handler].onKeyDown({ key: 'Enter', preventDefault: () => null });
   setTimeout(() => {
-  }, 1)
+    terminalInput[handler].onKeyDown({ key: 'Enter', preventDefault: () => null });
+  }, 0)
 }
