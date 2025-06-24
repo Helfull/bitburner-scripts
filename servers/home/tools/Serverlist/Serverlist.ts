@@ -1,4 +1,4 @@
-import { getServers, weight } from '../../cnc/lib';
+import { getServers, weight } from '@lib/utils';
 import { HAS_MONEY, IS_HACKABLE, IS_NOT_HOME, IS_NOT_PRIVATE } from '../../server/filter';
 import { BY_HACKABLE, BY_MAX_RAM, BY_RAM_USAGE, BY_WEIGHT } from '../../server/sort';
 

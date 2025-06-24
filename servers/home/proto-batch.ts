@@ -1,7 +1,7 @@
 import { Metrics } from './batcher/Metrics';
 import { ProtoBatcher } from './batcher/ProtoBatcher';
 import { RAMManager } from './batcher/RamManager';
-import { getServers, setupDefault } from './cnc/lib';
+import { getServers, setupDefault } from '@lib/utils';
 import { config } from './config';
 import { BY_RAM_USAGE } from './server/sort';
 import { Logger } from './tools/logger';
@@ -26,9 +26,12 @@ export async function main(ns: NS) {
     lock.unlock();
   }, 'unlock');
 
+  const rmm: RAMManager = new RAMManager(ns, getServers(ns).sort(BY_RAM_USAGE(ns)).map(ns.getServer));
+  rmm.getServers(() => getServers(ns).sort(BY_RAM_USAGE(ns)).map(ns.getServer));
+
   const proto = new ProtoBatcher(
     ns,
-    new RAMManager(ns, getServers(ns).sort(BY_RAM_USAGE(ns)).map(ns.getServer)),
+    rmm,
     new Metrics(ns, 0),
     new Logger(ns),
     config.proto,

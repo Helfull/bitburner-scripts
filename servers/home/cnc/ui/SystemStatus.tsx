@@ -1,16 +1,13 @@
-import { MessageFactory, Messages } from "@/servers/home/cnc/messages/factory";
 import { isRunningByName } from "@/servers/home/cnc/scripts";
-import { config } from "@/servers/home/config";
 import { NetscriptContext } from "@lib/MountingPoint";
 import { win } from "@lib/bbElements";
-import { useInterval } from "@lib/hooks/TimerHook";
-import { useWindow } from "@lib/hooks/WindowHelper";
+import { useInterval } from "@lib/hooks/useInterval";
+import { useWindow } from "@lib/hooks/useWindow";
 import { BooleanBox } from "@lib/ui/BooleanBox";
 import React, { useContext, useEffect, useState } from "react";
 import { Tabs } from '@lib/ui/Tabs';
-import { execCommand } from '@lib/utils';
-import { createServerTree } from '@lib/serverTree';
-import { IS_NOT_PRIVATE } from '@/servers/home/server/filter';
+import { Backdoors } from '@/servers/home/cnc/ui/tabs/Backdoors.tabs';
+import { MessagesList } from '@/servers/home/cnc/ui/tabs/Messages.tabs';
 
 export function StatusCell({active, name, pid, onClick} : {active?: boolean, name: string, pid?: number, onClick?: () => void}) {
   return <BooleanBox value={active} onClick={onClick}>
@@ -22,7 +19,6 @@ export function StatusCell({active, name, pid, onClick} : {active?: boolean, nam
       justifyContent: 'center',
       alignItems: 'center',
       boxSizing: 'border-box',
-      cursor: 'pointer',
     }}>
       <span>{name}</span>
       {pid ? <span style={{
@@ -36,45 +32,6 @@ export function StatusCell({active, name, pid, onClick} : {active?: boolean, nam
   </BooleanBox>;
 }
 
-type MessageLogProps = {
-  messages: Messages[];
-}
-function MessageLog({ messages }: MessageLogProps) {
-  return <div style={{
-    height: '100%',
-    overflow: 'scroll',
-    border: '1px solid white',
-    display: 'flex',
-    flexDirection: 'column',
-    padding: '5px',
-    boxSizing: 'border-box',
-  }}>
-    {messages.slice(0, 20).map((message, index) => (
-      <div style={{borderBottom: '1px solid white'}} key={index}>
-        <div style={{
-          display: 'flex',
-          gap: '5px',
-          marginBottom: '5px',
-          width: '100%',
-          alignItems: 'center',
-        }}>
-          <span style={{
-            color: "grey",
-            fontSize: "10px",
-          }}>{message?.pid}</span>
-          <span style={{
-            color: "white",
-            fontSize: "10px",
-          }}>{message?.type}</span>
-          <span>{message?.host}</span>
-          <span>{message?.target}</span>
-        </div>
-        <span>{message?.printMsg}</span>
-      </div>
-    ))}
-  </div>
-}
-
 export function SystemStatus() {
   useWindow('#system-status');
 
@@ -86,50 +43,18 @@ export function SystemStatus() {
     ns.ui.setTailTitle('System Status');
   }, []);
 
-  const [messages, setMessages] = useState<Messages[]>([]);
   const [status, setStatus] = useState<{[key: string]: number}>({});
-  const [backdoors, setBackdoors] = useState<{[key: string]: { value: any, onClick: () => void}}>({});
-
   useInterval(() => {
-    const portHandle = ns.getPortHandle(config.cncPort);
-    while(!portHandle.empty()) {
-      setMessages((messages) => {
-        return [MessageFactory(ns, portHandle.read()), ...messages];
-      });
-    }
-
-
     setStatus({
-      'prep-all': isRunningByName(ns, 'prep-all.js', 'home'),
       'nuke-net': isRunningByName(ns, 'nuke-net.js', 'home'),
       'hacknet': isRunningByName(ns, 'hack-net.js', 'home'),
-      'servers': isRunningByName(ns, 'tools/servers.js', 'home'),
-    });
-
-    const tree = createServerTree(ns, (servers: string[]) => servers.filter(IS_NOT_PRIVATE(ns)));
-
-    const cString = (target: string) => tree.reversePathTo(target).reduce((prev, cur) => prev + ' ;connect ' + cur, '') + ' ;backdoor'
-
-    setBackdoors({
-      'avmnite-02h': { value: ns.getServer('avmnite-02h').backdoorInstalled, onClick: () => execCommand(cString('avmnite-02h')), },
-      'I.I.I.I': { value: ns.getServer('I.I.I.I').backdoorInstalled, onClick: () => execCommand(cString('I.I.I.I')), },
-      'run4theh111z': { value: ns.getServer('run4theh111z').backdoorInstalled, onClick: () => execCommand(cString('run4theh111z')), },
+      'share-net': isRunningByName(ns, 'share-net.js', 'home'),
     });
   }, 1000, []);
 
   const tabs = {
-    'Messages': <div style={{width:'100%'}}>
-      <span>Port messages</span>
-      <MessageLog messages={messages} />
-    </div>,
-    'Backdoors': <div>
-      <span>Backdoors</span>
-        {Object.entries(backdoors).map(([key, installed]) => (
-          <div key={key}>
-            <StatusCell active={installed.value} name={key} onClick={installed.onClick} />
-          </div>
-        ))}
-      </div>
+    'Messages': <MessagesList />,
+    'Backdoors': <Backdoors />,
   };
 
   return <div id="system-status">

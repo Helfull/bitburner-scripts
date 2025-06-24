@@ -1,8 +1,9 @@
 import { HAS_ADMIN_ACCESS } from '@/servers/home/server/filter';
 import { Prepper } from './batcher/Prepper';
 import { RAMManager } from './batcher/RamManager';
-import { getServers, setupDefault } from './cnc/lib';
+import { getServers, setupDefault } from '@lib/utils';
 import { Logger } from '@/servers/home/tools/logger';
+import { nuke } from '@lib/nuke';
 
 export async function main(ns: NS) {
   const target = ns.args[0] as string;
@@ -18,6 +19,8 @@ export async function main(ns: NS) {
   );
   log.debug('Setup default');
   ns.ui.setTailTitle(ns.sprintf('Prep %s', target));
+
+  await nuke(ns, ns.getServer(target))
 
   log.info(`Starting RAMManager`);
   const rmm = new RAMManager(ns, getServers(ns).map(ns.getServer));

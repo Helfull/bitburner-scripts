@@ -1,5 +1,5 @@
 import { printTableObj } from '@lib/table';
-import { getServers, setupDefault } from '../cnc/lib';
+import { getServers, setupDefault } from '@lib/utils';
 import { HAS_ADMIN_ACCESS, HAS_MONEY, IS_NOT_HOME, IS_NOT_PRIVATE, IS_PREPPED, NEEDS_PREP } from '../server/filter';
 import { BY_WEIGHT } from '../server/sort';
 import { Logger } from '../tools/logger';

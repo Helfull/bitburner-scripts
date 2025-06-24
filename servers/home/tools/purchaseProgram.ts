@@ -1,30 +1,8 @@
-import { setupDefault } from '../cnc/lib';
 import { Logger } from '@/servers/home/tools/logger';
 import { defineScript } from '@lib/flags';
+import { Programs } from '@lib/enums';
+import { tryPurchaseVirus } from '@lib/nuke';
 
-export function checkVirus(ns: NS, virus: string) {
-  if (!ns.fileExists(virus, 'home')) {
-    return false;
-  }
-  return true;
-}
-
-export function tryPurchaseVirus(ns: NS, virus: string): boolean {
-  if (checkVirus(ns, virus)) return true;
-
-  try {
-    ns.singularity.purchaseProgram(virus);
-    return true;
-  } catch (e) {
-
-    if (e.includes('This singularity function requires Source-File 4 to run')) {
-      ns.printf(`ERROR | Cannot purchase ${virus} because Source-File 4 is required.`);
-      return false;
-    }
-
-    return false;
-  }
-}
 
 export async function main(ns: NS) {
     const args = defineScript(ns, {
@@ -32,16 +10,7 @@ export async function main(ns: NS) {
     flags: {
       viruses: {
         description: 'Try to upgrade current servers to highest purchaseable tier.',
-        defaultValue: [
-          'BruteSSH.exe',
-          'FTPCrack.exe',
-          'relaySMTP.exe',
-          'HTTPWorm.exe',
-          'SQLInject.exe',
-          'DeepscanV1.exe',
-          'DeepscanV2.exe',
-          'AutoLink.exe',
-        ],
+        defaultValue: Object.keys(Programs).map((program) => Programs[program as keyof typeof Programs]),
         options: [],
       },
     },

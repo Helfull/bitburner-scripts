@@ -1,9 +1,5 @@
-import { Server } from '../../../NetscriptDefinitions';
 import { config } from '../config';
-import { getHostname, ramAvailable } from './utils';
-
-type ServerString = string | Server;
-
+import { getHostname, ramAvailable, ServerString } from './utils';
 export const CAN_HACK = (ns: NS) => (server: ServerString) =>
   CAN_BE_NUKED(ns)(server) && HAS_ADMIN_ACCESS(ns)(server);
 export const IS_HACKABLE = CAN_HACK;

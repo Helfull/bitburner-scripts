@@ -1,10 +1,10 @@
 import { ContinuesBatcher } from '@/servers/home/batcher/ContinuesBatcher';
 import { Metrics } from './batcher/Metrics';
 import { RAMManager } from './batcher/RamManager';
-import { getServers, setupDefault } from './cnc/lib';
 import { config } from './config';
 import { BY_RAM_USAGE } from './server/sort';
 import { Logger } from './tools/logger';
+import { getServers, setupDefault } from '@lib/utils';
 
 export async function main(ns: NS) {
   const target = ns.args[0] as string;

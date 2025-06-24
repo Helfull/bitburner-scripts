@@ -1,9 +1,10 @@
 import { printTableObj } from '@lib/table';
-import { killOldScript } from './cnc/lib';
+import { killOldScript } from '@lib/utils';
 import { defineScript } from '@lib/flags';
 import { Manager } from '@/servers/home/tools/Hacknet/Manager';
 import { CheapestBuy } from '@/servers/home/tools/Hacknet/Strategy/LowestCost';
 import { Color } from '@lib/colors';
+import { ProductionPerCredit } from '@/servers/home/tools/Hacknet/Strategy/ProductionPerCredit';
 
 export async function main(ns: NS) {
   killOldScript(ns, ns.getScriptName(), ns.getServer().hostname);
@@ -17,7 +18,7 @@ export async function main(ns: NS) {
       },
       delay: {
         description: 'The delay between runs',
-        defaultValue: 1000,
+        defaultValue: 50,
       },
     },
   });
@@ -29,7 +30,7 @@ export async function main(ns: NS) {
   const headercores = `cores [${Color.grey.wrap('next cost')}]`;
 
   do {
-    manager.run(CheapestBuy);
+    manager.run(ProductionPerCredit);
 
     const nodes = manager.nodes.map((node) => ({
       id: node.index,
@@ -41,7 +42,6 @@ export async function main(ns: NS) {
       totalProduction: Color.yellow.wrap(ns.formatNumber(node.totalProduction)),
     }));
 
-    ns.clearLog();
     printTableObj(ns, nodes, ns.printf);
 
     if (!manager.lastPurchase) {

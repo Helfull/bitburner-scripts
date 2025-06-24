@@ -9,7 +9,7 @@ export interface Manager extends Hacknet {}
 export class Manager {
   public lastPurchase: Purchase;
 
-  constructor(private ns: NS, protected log = new Logger(ns)) {
+  constructor(public ns: NS, protected log = new Logger(ns)) {
     Object.assign(this, ns.hacknet);
   }
 
@@ -24,6 +24,8 @@ export class Manager {
   run(strategy: Strategy) {
     const nodes = this.nodes;
     const purchase = strategy(this, nodes);
+
+    this.log.info(`Action: ${purchase.type} for ${this.ns.formatNumber(purchase.cost)} with value ${purchase.value ?? 'N/A'}`);
 
     if (!this.canAfford(purchase.cost)) {
       return;

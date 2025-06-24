@@ -1,4 +1,4 @@
-import { getServers, killOldScript, setupDefault } from '@/servers/home/cnc/lib';
+import { getServers, killOldScript, setupDefault } from  '@lib/utils';
 import {
   HAS_ADMIN_ACCESS,
   HAS_MAX_MONEY,

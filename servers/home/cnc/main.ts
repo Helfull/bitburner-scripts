@@ -1,6 +1,6 @@
 import { config } from '../config';
 import { Logger } from '../tools/logger';
-import { setupDefault } from './lib';
+import { setupDefault } from '@lib/utils';
 
 export async function main(ns: NS) {
   const args = setupDefault(ns);

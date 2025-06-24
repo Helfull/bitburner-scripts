@@ -1,5 +1,5 @@
 import { printTableObj } from '@lib/table';
-import { bool, progressBar } from '../../cnc/lib';
+import { bool, progressBar } from '@lib/utils';
 import { Color } from '@lib/colors';
 import { COLUMNS, Columns, FILTERS, Filters, PercentStats, SORTS, Sorts, StringRows, serverList } from './Serverlist';
 import { defineScript } from '@lib/flags';

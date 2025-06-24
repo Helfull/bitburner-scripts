@@ -40,8 +40,6 @@ export function MessageFactory(ns: NS, messageString: string): Messages {
 
     return message;
   } catch (e) {
-    ns.tprint(`Error parsing message: ${JSON.stringify(messageString)}`);
-    ns.tprint(`Error: ${e}`);
     return {
       type: 'unknown',
       printMsg: JSON.stringify(messageString),

@@ -1,4 +1,4 @@
-import { getServers, setupDefault, weight } from './cnc/lib';
+import { getServers, setupDefault, weight } from '@lib/utils';
 import { BY_WEIGHT } from './server/sort';
 import {
   HAS_ADMIN_ACCESS, HAS_AVAILABLE_RAM,

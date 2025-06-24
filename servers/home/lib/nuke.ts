@@ -1,14 +1,29 @@
 import { Server } from "../../../NetscriptDefinitions";
-import { checkVirus } from "../tools/purchaseProgram";
 
-export async function tryPurchaseVirus(ns: NS, virus: string): Promise<boolean> {
-  const pid = ns.run('tools/purchaseProgram.js', 1, '--viruses', virus);
-
-  while (ns.isRunning(pid)) {
-    await ns.sleep(100);
+export function checkVirus(ns: NS, virus: string) {
+  if (!ns.fileExists(virus, 'home')) {
+    return false;
   }
+  return true;
+}
 
-  return checkVirus(ns, virus);
+export function tryPurchaseVirus(ns: NS, virus: string): boolean {
+  if (checkVirus(ns, virus)) return true;
+/*
+
+  try {
+    ns.singularity.purchaseProgram(virus);
+    return true;
+  } catch (e) {
+
+    if (e.includes('This singularity function requires Source-File 4 to run')) {
+      ns.printf(`ERROR | Cannot purchase ${virus} because Source-File 4 is required.`);
+      return false;
+    }
+*/
+
+    return false;
+/*  }*/
 }
 
 export async function nuke(ns: NS, server: Server): Promise<boolean> {
@@ -36,25 +51,25 @@ export async function nuke(ns: NS, server: Server): Promise<boolean> {
 }
 
 export async function ftpPortOpen(ns: NS, server: Server) {
-  if (!server.ftpPortOpen && await tryPurchaseVirus(ns, 'FTPCrack.exe')) {
+  if (!server.ftpPortOpen && tryPurchaseVirus(ns, 'FTPCrack.exe')) {
     ns.ftpcrack(server.hostname);
   }
 }
 
 export async function sqlPortOpen(ns: NS, server: Server) {
-  if (!server.sqlPortOpen && await tryPurchaseVirus(ns, 'SQLInject.exe')) {
+  if (!server.sqlPortOpen && tryPurchaseVirus(ns, 'SQLInject.exe')) {
     ns.sqlinject(server.hostname);
   }
 }
 
 export async function httpPortOpen(ns: NS, server: Server) {
-  if (!server.httpPortOpen && await tryPurchaseVirus(ns, 'HTTPWorm.exe')) {
+  if (!server.httpPortOpen && tryPurchaseVirus(ns, 'HTTPWorm.exe')) {
     ns.httpworm(server.hostname);
   }
 }
 
 export async function sshPortOpen(ns: NS, server: Server) {
-  if (!server.sshPortOpen && await tryPurchaseVirus(ns, 'BruteSSH.exe')) {
+  if (!server.sshPortOpen && tryPurchaseVirus(ns, 'BruteSSH.exe')) {
     ns.brutessh(server.hostname);
   }
 }

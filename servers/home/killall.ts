@@ -1,4 +1,4 @@
-import { getServers, setupDefault } from '@/servers/home/cnc/lib';
+import { getServers, setupDefault } from '@lib/utils';
 
 export function main(ns: NS) {
   const args = setupDefault<{ scriptName: string[] }>(ns, [['scriptName', []]]);

@@ -1,9 +1,9 @@
-import { getServers, killOldScript, setupDefault } from './cnc/lib';
-import { nuke, tryPurchaseVirus } from './cnc/nuke';
+import { getServers, killOldScript, setupDefault } from '@lib/utils';
 import { BY_WEIGHT } from './server/sort';
 import { CAN_BE_NUKED, HAS_MAX_PORTS, HAS_NO_ADMIN_ACCESS } from './server/filter';
 import { Color } from './lib/colors';
 import { printTableObj } from '@lib/table';
+import { nuke, tryPurchaseVirus } from '@lib/nuke';
 
 export async function main(ns: NS) {
   setupDefault(ns);
@@ -14,11 +14,11 @@ export async function main(ns: NS) {
 
   const stats: { virus: Record<string, boolean> } = {
     virus: {
-      'BruteSSH.exe': await tryPurchaseVirus(ns, 'BruteSSH.exe'),
-      'FTPCrack.exe': await tryPurchaseVirus(ns, 'FTPCrack.exe'),
-      'relaySMTP.exe': await tryPurchaseVirus(ns, 'relaySMTP.exe'),
-      'HTTPWorm.exe': await tryPurchaseVirus(ns, 'HTTPWorm.exe'),
-      'SQLInject.exe': await tryPurchaseVirus(ns, 'SQLInject.exe'),
+      'BruteSSH.exe': tryPurchaseVirus(ns, 'BruteSSH.exe'),
+      'FTPCrack.exe': tryPurchaseVirus(ns, 'FTPCrack.exe'),
+      'relaySMTP.exe': tryPurchaseVirus(ns, 'relaySMTP.exe'),
+      'HTTPWorm.exe': tryPurchaseVirus(ns, 'HTTPWorm.exe'),
+      'SQLInject.exe': tryPurchaseVirus(ns, 'SQLInject.exe'),
     },
   };
 
@@ -30,7 +30,7 @@ export async function main(ns: NS) {
     const viruses = Object.keys(stats.virus);
     for (const virus of viruses) {
       if (!stats.virus[virus]) {
-        stats.virus[virus] = await tryPurchaseVirus(ns, virus);
+        stats.virus[virus] = tryPurchaseVirus(ns, virus);
       }
     }
 

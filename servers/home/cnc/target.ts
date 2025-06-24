@@ -1,7 +1,7 @@
 
 import { BatchRunner } from "../batcher/BatchRunner";
 import { RAMManager } from "../batcher/RamManager";
-import { getServers, setupDefault } from "../cnc/lib";
+import { getServers, setupDefault } from '@lib/utils';
 
 export async function main(ns: NS) {
   const target = ns.args[0] as string;

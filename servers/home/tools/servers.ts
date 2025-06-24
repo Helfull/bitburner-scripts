@@ -123,7 +123,16 @@ class ServerManager {
       `Max tier purchaseable: ${purchaseableMaxTier.maxTier} (${this.ns.formatNumber(purchaseableMaxTier.cost)})`,
     );
 
-    this.ns.purchaseServer(this.getNextServerName(), Math.pow(2, purchaseableMaxTier.maxTier));
+    const serverName = this.ns.purchaseServer(this.getNextServerName(), Math.pow(2, purchaseableMaxTier.maxTier));
+
+    if (serverName === '') {
+      this.log.error(JSON.stringify({
+        message: 'Failed to purchase server',
+        maxTier: purchaseableMaxTier.maxTier,
+        cost: this.ns.formatNumber(purchaseableMaxTier.cost),
+        availableMoney: this.ns.formatNumber(this.ns.getServerMoneyAvailable('home')),
+      }, null, 2))
+    }
   }
 
   tryUpgradeServers() {

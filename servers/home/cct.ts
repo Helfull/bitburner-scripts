@@ -1,4 +1,4 @@
-import { getServers, setupDefault } from '@/servers/home/cnc/lib';
+import { getServers, setupDefault } from  '@lib/utils';
 import { ContractSolver } from '@/servers/home/codingcontracts/Solver';
 
 export async function main(ns: NS) {

@@ -1,5 +1,4 @@
 import { defineScript } from '@lib/flags';
-import { setupDefault } from './cnc/lib';
 import { config } from './config';
 
 export async function main(ns: NS) {
@@ -17,21 +16,29 @@ export async function main(ns: NS) {
 
   ns.print(JSON.stringify(targets, null, 2));
 
-  ns.scp('tools/farm/weaken.js', config.farmHost, 'home');
-  ns.scp('tools/farm/grow.js', config.farmHost, 'home');
-
-  const availableRam = ns.getServerMaxRam(config.farmHost) - ns.getServerUsedRam(config.farmHost);
-  const perTarget = Math.floor(availableRam / targets.length);
-  const weakenThreads = Math.floor(perTarget / 3 / ns.getScriptRam('tools/farm/weaken.js'));
-  const growThreads = Math.floor(perTarget / 3 / ns.getScriptRam('tools/farm/grow.js'));
-  const hackThreads = Math.floor(perTarget / 3 / ns.getScriptRam('tools/farm/hack.js'));
+  const pids = {};
 
   for (const target of targets) {
-    ns.print(`Targetting ${target}`);
-    ns.exec('tools/farm/weaken.js', config.farmHost, weakenThreads, '--target', target, weakenThreads);
-    ns.exec('tools/farm/grow.js', config.farmHost, growThreads, '--target', target, growThreads);
-    ns.exec('tools/farm/hack.js', config.farmHost, hackThreads, '--target', target, hackThreads);
-
-    await ns.sleep(100);
+    pids[target] = await start(ns, target);
   }
+
+  while(true) {
+    const runningTargets = Object.keys(pids);
+
+    for (const target of runningTargets) {
+      if (!pids[target].isRunning()) {
+        ns.print(`Target ${target} is not running, restarting...`);
+        pids[target] = await start(ns, target);
+      }
+    }
+
+    await ns.sleep(1000);
+  }
+}
+
+async function start(ns: NS, target: string): Promise<{ pid: number, isRunning: () => boolean }> {
+  ns.print(`Targetting ${target}`);
+  const pid = ns.exec('tools/farm.js', config.farmHost, {}, '--target', target);
+  await ns.sleep(100);
+  return { pid, isRunning: () => ns.isRunning(pid) };
 }

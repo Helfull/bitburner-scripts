@@ -1,4 +1,4 @@
-import { setupDefault } from '../cnc/lib';
+import { setupDefault } from '@lib/utils';
 import { config } from '../config';
 
 export async function main(ns: NS) {

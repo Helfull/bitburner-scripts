@@ -1,4 +1,4 @@
-import { getServers } from '@/servers/home/cnc/lib';
+import { getServers } from  '@lib/utils';
 import { BatchRunner } from './BatchRunner';
 import {
   HAS_MAX_MONEY,

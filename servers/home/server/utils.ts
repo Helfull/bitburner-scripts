@@ -1,5 +1,7 @@
 import { Server } from '@/NetscriptDefinitions';
-import { execCommand } from '@lib/utils';
+import { execCommand } from '@lib/execCommand';
+
+export type ServerString = string | Server;
 
 export function tap<T>(obj: T, cb: (obj: T) => void): T {
   cb(obj)

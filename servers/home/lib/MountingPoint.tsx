@@ -33,7 +33,7 @@ export const createMountingPoint = (ns: NS, mpConfig: {closeOnExit:boolean, tail
     cleanup: () => {
       cleanupCallbacks.forEach((f) => f());
     },
-    async mount(component: React.ReactElement, root?: HTMLElement): Promise<void> {
+    async mount(component: React.ReactElement, root?: HTMLElement): Promise<unkown> {
       return new Promise(async (resolve) => {
         if (!root) {
           ns.clearLog();

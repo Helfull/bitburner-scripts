@@ -1,6 +1,6 @@
-import { getLogger, start, StartUpUtil } from '@/servers/home/startup-tools/util';
+import { setupDefault } from '@lib/utils';
 import { config } from '@/servers/home/config';
-import { setupDefault } from '@/servers/home/cnc/lib';
+import { StartUpUtil } from '@/servers/home/startup-tools/util';
 
 export async function main(ns: NS)
 {
@@ -8,15 +8,17 @@ export async function main(ns: NS)
 
   const startUp = new StartUpUtil(ns);
 
-  await startUp.start(ns, 'tools/servers.js', '--loop', '--purchase', '1');
+  await startUp.start(ns, 'tools/servers.js', '--loop', '--purchase=1');
 
   await startUp.idle(() => {
     startUp.logger.info(`Waiting for purchased servers to be available`);
     startUp.logger.info(`Purchased servers: ${ns.getPurchasedServers().length}`);
-    return ns.getPurchasedServers().length >= 0;
+    return ns.getPurchasedServers().length > 0;
   });
 
   await startUp.start(ns, 'tools/servers.js', '--loop', '--upgrade');
+
+  await startUp.start(ns, 'prep.js', 'n00dles');
 
   startUp.logger.info('Waiting for private server or enough home server RAM');
 

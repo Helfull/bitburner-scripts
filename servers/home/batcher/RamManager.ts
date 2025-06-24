@@ -66,7 +66,7 @@ export class RAMManager {
     return maxRam;
   }
 
-  set getServers(fn: () => Server[]) {
+  getServers(fn: () => Server[]) {
     this._getServers = fn;
   }
 

@@ -1,5 +1,5 @@
 import React from "react";
-import { killOldScript } from "../../cnc/lib";
+import { killOldScript } from '@lib/utils'
 import { ServerlistUI } from "./ServerListUI";
 import { DrawerButton } from "./ui/DrawerButton";
 import { createMountingPoint } from "@lib/MountingPoint";

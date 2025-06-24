@@ -1,5 +1,5 @@
 import { Server } from '../../../NetscriptDefinitions';
-import { weight } from '../cnc/lib';
+import { weight } from '@lib/utils';
 import { getHostname } from './utils';
 
 export const BY_RAM_USAGE = (ns: NS) => (a: string | Server, b: string | Server) =>

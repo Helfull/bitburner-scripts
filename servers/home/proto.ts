@@ -1,5 +1,5 @@
 
-import { flags, getServers, setupDefault, setupTail, weight } from "./cnc/lib";
+import { flags, getServers, setupDefault, setupTail, weight } from '@lib/utils';
 import { config } from "./config";
 import { BY_WEIGHT } from "./server/sort";
 import { CAN_HACK, CAN_HAVE_MONEY, IS_NOT_PRIVATE, IS_PRIVATE } from "./server/filter";

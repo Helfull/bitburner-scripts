@@ -1,4 +1,4 @@
-import { stripColors } from '@/servers/home/cnc/lib';
+import { stripColors } from  '@lib/utils';
 
 const tableConfig = {
   // Should there be padding between divider and content

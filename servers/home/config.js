@@ -19,6 +19,11 @@ export const config = {
   farmRamPercentage: 0.7,
   farmHost: 'home',
 
+  // Reputation farm
+  repShareServers: [],
+  repShareAllPrivate: true,
+  repSharePrivateExclude: ['pserv-1'],
+
   // The prefix for private servers
   prefixPrivate: 'pserv-',
   privateServers: {

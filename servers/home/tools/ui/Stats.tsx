@@ -1,6 +1,6 @@
 import React, { useContext, useState } from 'react';
 import { NetscriptContext } from '@lib/MountingPoint';
-import { useInterval } from '@lib/hooks/TimerHook';
+import { useInterval } from '@lib/hooks/useInterval';
 
 export function Stats() {
   const ns: NS = useContext(NetscriptContext);
