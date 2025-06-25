@@ -11,8 +11,10 @@ export const CAN_BE_NUKED = (ns: NS) => (server: ServerString) =>
   ns.getServerRequiredHackingLevel(getHostname(ns, server)) <= ns.getHackingLevel();
 export const IS_GOOD_TARGET = (ns: NS) => (server: ServerString) =>
   ns.getServerRequiredHackingLevel(getHostname(ns, server)) / 2 <= ns.getHackingLevel();
-export const HAS_RAM_AVAILABLE = (ns: NS) => (server: ServerString) => ns.getServerMaxRam(getHostname(ns, server)) > 0 && ns.getServerUsedRam(getHostname(ns, server)) < ns.getServerMaxRam(getHostname(ns, server));
-export const HAS_ADMIN_ACCESS = (ns: NS) => (server: ServerString) => ns.hasRootAccess(getHostname(ns, server));
+export const HAS_RAM_AVAILABLE = (ns: NS) => (server: ServerString) =>
+  ns.getServerMaxRam(getHostname(ns, server)) > 0 && ns.getServerUsedRam(getHostname(ns, server)) < ns.getServerMaxRam(getHostname(ns, server));
+export const HAS_ADMIN_ACCESS = (ns: NS) => (server: ServerString) =>
+  ns.hasRootAccess(getHostname(ns, server));
 export const HAS_NO_ADMIN_ACCESS = (ns: NS) => (server: ServerString) => !HAS_ADMIN_ACCESS(ns)(server);
 export const HAS_MONEY = (ns: NS) => (server: ServerString) => ns.getServerMaxMoney(getHostname(ns, server)) > 0;
 export const HAS_MAX_MONEY = (ns: NS) => (server: ServerString) =>

@@ -12,6 +12,8 @@ export async function main(ns: NS) {
     },
   });
 
+  await ns.sleep(2000); // Give time for the script to be set up
+
   if (args.target === '') {
     ns.tprint('ERROR | No target specified');
     return;

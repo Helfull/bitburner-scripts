@@ -1,3 +1,5 @@
+import { proxyNs } from '@lib/ram-dodge';
+
 /** @param {NS} ns */
 export async function main(ns) {
   const go = ns.go;
@@ -537,9 +539,9 @@ async function playTacticalMove(ns, engine, moveCount) {
     const go = ns.go;
 
     try {
-        const currentPlayer = go.getCurrentPlayer();
-        const gameState = go.getGameState();
-        const board = go.getBoardState();
+        const currentPlayer = await proxyNs(ns, 'go.getCurrentPlayer');
+        const gameState = await proxyNs(ns, 'go.getGameState');
+        const board = await proxyNs(ns, 'go.getBoardState');
 
         ns.print(`\n=== TACTICAL MOVE ${moveCount + 1} ===`);
 
@@ -568,7 +570,7 @@ async function playTacticalMove(ns, engine, moveCount) {
 
         if (result.move) {
             ns.print(`Tactical move: (${result.move.x}, ${result.move.y})`);
-            const moveResult = await go.makeMove(result.move.x, result.move.y);
+            const moveResult = await proxyNs(ns, 'go.makeMove', result.move.x, result.move.y);
             ns.print(`Result type: ${moveResult.type || 'unknown'}`);
             ns.print(`Result: ${JSON.stringify(moveResult)}`);
             return moveResult && moveResult !== "Invalid move";

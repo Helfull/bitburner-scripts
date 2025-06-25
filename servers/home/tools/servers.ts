@@ -3,6 +3,7 @@ import { Server } from '../../../NetscriptDefinitions';
 import { setupDefault } from '../cnc/lib';
 import { config } from '../config';
 import { Logger } from './logger';
+import { proxyNs } from '@lib/ram-dodge';
 
 export async function main(ns: NS) {
   const args = defineScript(ns, {
@@ -42,7 +43,7 @@ export async function main(ns: NS) {
   manager.doUpgradeServers = doAll || args.upgrade;
 
   do {
-    const pServers = ns.getPurchasedServers();
+    const pServers = await proxyNs(ns, 'getPurchasedServers');
     log.log(`Purchased servers: ${pServers.length}`);
     log.log(`Max servers: ${manager.maxServersLimit}`);
 
@@ -53,8 +54,8 @@ export async function main(ns: NS) {
     log.debug('doPurchaseServers %s', manager.doPurchaseServers ? 'Yes' : 'No');
     log.debug('doUpgradeServers %s', manager.doUpgradeServers ? 'Yes' : 'No');
 
-    manager.tryUpgradeServers();
-    manager.tryPurchaseServer();
+    await manager.tryUpgradeServers();
+    await manager.tryPurchaseServer();
 
     if (args.loop) {
       await ns.sleep(1000);
@@ -108,11 +109,11 @@ class ServerManager {
     return true;
   }
 
-  updateServers() {
-    this.servers = this.ns.getPurchasedServers();
+  async updateServers() {
+    this.servers = await proxyNs(this.ns, 'getPurchasedServers');
   }
 
-  tryPurchaseServer() {
+  async tryPurchaseServer() {
     if (this.hitServersLimit) return;
 
     this.log.log('Trying to purchase another server');
@@ -123,7 +124,7 @@ class ServerManager {
       `Max tier purchaseable: ${purchaseableMaxTier.maxTier} (${this.ns.formatNumber(purchaseableMaxTier.cost)})`,
     );
 
-    const serverName = this.ns.purchaseServer(this.getNextServerName(), Math.pow(2, purchaseableMaxTier.maxTier));
+    const serverName = await proxyNs(this.ns, 'purchaseServer', await this.getNextServerName(), Math.pow(2, purchaseableMaxTier.maxTier));
 
     if (serverName === '') {
       this.log.error(JSON.stringify({
@@ -135,17 +136,17 @@ class ServerManager {
     }
   }
 
-  tryUpgradeServers() {
+  async tryUpgradeServers() {
     if (this.serversAreMaxed) return;
 
     this.maxedServersCount = 0;
 
     this.log.log('Trying to upgrade servers');
     for (const hostname of this.servers) {
-      const server = this.ns.getServer(hostname);
+      const server = await proxyNs(this.ns, 'getServer', hostname);
       let curTier: number | string = Math.log(server.maxRam) / Math.log(2);
 
-      const nextUpgradeCost = this.ns.getPurchasedServerUpgradeCost(server.hostname, Math.pow(2, curTier + 1));
+      const nextUpgradeCost = await proxyNs(this.ns, 'getPurchasedServerUpgradeCost', server.hostname, Math.pow(2, curTier + 1));
 
       if (curTier >= config.maxRamTier) {
         curTier = 'MAX';
@@ -164,8 +165,8 @@ class ServerManager {
     }
   }
 
-  getNextServerName() {
-    return `${config.prefixPrivate}${this.ns.getPurchasedServers().length + 1}`;
+  async getNextServerName() {
+    return `${config.prefixPrivate}${(await proxyNs(this.ns, 'getPurchasedServers')).length + 1}`;
   }
 
   upgradeServer(server: Server) {

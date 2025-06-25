@@ -131,6 +131,8 @@ export class RAMManager {
       infiniteLoopBreaker--;
       const nextBlock = this.blocks.sort((a, b) => b.ram - a.ram).find((b) => b.ram >= minBlockSize);
 
+
+
       if (!nextBlock) {
         this.log.warn(`Not enough blocks to assign ${numThreads} threads`);
         return false;
