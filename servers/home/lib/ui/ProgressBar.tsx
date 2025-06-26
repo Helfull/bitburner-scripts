@@ -27,9 +27,9 @@ export function ProgressBar({percent, max, current, reverseColors = false}: {per
       <div style={{backgroundColor: fillColor, width: ns.formatPercent(percent), height: '100%'}} />
       <div style={{backgroundColor: emptyColor, width: ns.formatPercent(1-percent), height: '100%'}} />
     </div>
-    <span>{ns.formatNumber(current)}</span>
+    <span>{ns.sprintf('%7s', ns.formatNumber(current))}</span>
     <span>/</span>
-    <span>{ns.formatNumber(max)}</span>
-    <span>({ns.formatPercent(percent)})</span>
+    <span>{ns.sprintf('%7s', ns.formatNumber(max))}</span>
+    <span>({ns.sprintf('%7s', ns.formatPercent(percent))})</span>
   </div>;
 }

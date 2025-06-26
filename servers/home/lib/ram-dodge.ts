@@ -1,43 +1,42 @@
 import { RunOptions, ScriptArg } from 'NetscriptDefinitions';
 
-const dodgeScript = 'lib/ram-dodge.js';
-const serverListScript = 'lib/findServer.js';
+const awaitResponseScripts = ['lib/findMostRam.js', 'lib/ram-dodge.js', 'lib/findServer.js'];
 
 export async function proxyNs(ns: NS, func: NSFunctionNames, ...args: any[]) {
   const ramCost = ns.getFunctionRamCost(func as string) + 1.6;
-  return proxy(ns, dodgeScript, ramCost, func, ...args);
+  return proxy(ns, 'lib/ram-dodge.js', { ramOverride: ramCost, threads: 1 }, func, ...args);
 }
 
-export async function proxy(ns: NS, script: string, ramCost: number, ...args: any[]) {
-  const executeOn = await exec(ns, serverListScript, 'home', 1, ramCost);
+export async function proxy(ns: NS, script: string, options: RunOptions, ...args: any[]) {
+  const executeOn = await exec(ns, 'lib/findServer.js', 'home', { threads: 1 }, options.ramOverride * options.threads, '--wait');
   await copyToHost(ns, script, executeOn);
-  return await exec(ns, script, executeOn, ramCost, ...args);
+  return await exec(ns, script, executeOn, options, ...args);
 }
 
 export async function copyToHost(ns: NS, script: string, host: string) {
   const funcFileExistsCost = ns.getFunctionRamCost('fileExists') + 1.6;
   const funcScpCost = ns.getFunctionRamCost('scp') + 1.6;
-  if (!(await exec(ns, dodgeScript, 'home', funcFileExistsCost, 'fileExists', script, host))) {
-    return await exec(ns, dodgeScript, 'home', funcScpCost, 'scp', script, host, 'home');
+  if (!(await exec(ns, 'lib/ram-dodge.js', 'home', { ramOverride: funcFileExistsCost }, 'fileExists', script, host))) {
+    return await exec(ns, 'lib/ram-dodge.js', 'home', { ramOverride: funcScpCost }, 'scp', script, host, 'home');
   }
   return true;
 }
 
-export async function exec(ns: NS, script: string, host: string, ramCost: number, ...args: ScriptArg[]): any {
-  return await execRun(ns, script, host, {
-    threads: 1,
-    ramOverride: ramCost,
-    temporary: true,
-  }, ...args);
+export async function exec(ns: NS, script: string, host: string, options: RunOptions, ...args: ScriptArg[]): any {
+  return await execRun(ns, script, host, { temporary: true, ...options }, ...args);
 }
 
 export async function execRun(ns: NS, script: string, host: string, threadOrOptions?: RunOptions, ...args: ScriptArg[]): any {
-  if (threadOrOptions.ramOverride < 1.6) {
+  if (!threadOrOptions.ramOverride  || threadOrOptions.ramOverride < 1.6) {
     threadOrOptions.ramOverride = ns.getScriptRam(script, host);
   }
   const pid = ns.exec(script, host, threadOrOptions, ...args);
 
-  if (script !== dodgeScript && script !== serverListScript) {
+  if (pid === 0) {
+    return 0;
+  }
+
+  if (! awaitResponseScripts.includes(script)) {
     return pid;
   }
 
@@ -51,7 +50,6 @@ export async function main(ns: NS) {
   let nsFunc: any = ns;
   for (let path of func.split('.')) {
     if (nsFunc[path] === undefined) {
-      ns.tprint(`Function ${func} not found in NS`);
       return;
     }
     nsFunc = nsFunc[path];
