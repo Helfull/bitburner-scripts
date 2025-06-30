@@ -37,7 +37,7 @@ export const createMountingPoint = (ns: NS, mpConfig: {closeOnExit:boolean, tail
       return new Promise(async (resolve) => {
         if (!root) {
           ns.clearLog();
-          ns.tail();
+          ns.ui.openTail();
           ns.disableLog('ALL');
           ns.printRaw(<span data-pid={ns.pid}></span>);
           await ns.sleep(0); // give up control so DOM can update
@@ -71,7 +71,6 @@ export const createMountingPoint = (ns: NS, mpConfig: {closeOnExit:boolean, tail
         ];
 
         cleanupCallbacks.push(() => ReactDOM.unmountComponentAtNode(root));
-        console.log({root, pid: ns.pid});
         try {
           ReactDOM.render(
             <ContextCollection contexts={contexts}>

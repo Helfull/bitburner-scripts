@@ -28,5 +28,5 @@ export async function main(ns: NS)
     return ns.getServerMaxRam(`${config.prefixPrivate}1`) >= 64;
   });
 
-  await startUp.start(ns, 'prep-all.js');
+  await startUp.start(ns, 'prep-net.js');
 }

@@ -6,7 +6,7 @@ import { Logger } from './logger';
 import { proxyNs } from '@lib/ram-dodge';
 
 export async function main(ns: NS) {
-  const args = defineScript(ns, {
+  const { flags, args } = defineScript(ns, {
     description: 'Manages private server farm upgrade and purchase',
     flags: {
       upgrade: { description: 'Try to upgrade current servers to highest purchaseable tier.', defaultValue: false },
@@ -25,22 +25,24 @@ export async function main(ns: NS) {
   });
 
   const log = new Logger(ns, {
-    outputFunction: args.cli ? 'tprintf' : 'printf',
+    outputFunction: flags.cli ? 'tprintf' : 'printf',
   });
 
-  const purchaseServers = args.purchase > 0 || args.purchase === -1;
-  const doAll = !args.upgrade && !purchaseServers;
+  const purchaseServers = flags.purchase > 0 || flags.purchase === -1;
+  const doAll = !flags.upgrade && !purchaseServers;
 
-  log.debug('Args: %s', JSON.stringify(args));
+  log.debug('Args: %s', JSON.stringify(flags));
   log.debug('Purchase servers: %s', purchaseServers);
-  log.debug('Upgrade servers: %s', args.upgrade);
+  log.debug('Upgrade servers: %s', flags.upgrade);
   log.debug('Do all: %s', doAll);
 
   const manager = new ServerManager(ns, log);
 
-  manager.maxServersLimit = args.purchase;
+  await manager.updateServers();
+
+  manager.maxServersLimit = flags.purchase;
   manager.doPurchaseServers = doAll || purchaseServers;
-  manager.doUpgradeServers = doAll || args.upgrade;
+  manager.doUpgradeServers = doAll || flags.upgrade;
 
   do {
     const pServers = await proxyNs(ns, 'getPurchasedServers');
@@ -57,12 +59,12 @@ export async function main(ns: NS) {
     await manager.tryUpgradeServers();
     await manager.tryPurchaseServer();
 
-    if (args.loop) {
+    if (flags.loop) {
       await ns.sleep(1000);
     }
 
-    manager.updateServers();
-  } while (args.loop && !manager.finished);
+    await manager.updateServers();
+  } while (flags.loop && !manager.finished);
 
   log.info(`Finished managing servers.`);
 }
@@ -78,7 +80,6 @@ class ServerManager {
   public doUpgradeServers = true;
 
   constructor(private ns: NS, private log: Logger) {
-    this.updateServers();
     this.serversLimit = this.ns.getPurchasedServerLimit();
   }
 
@@ -111,6 +112,11 @@ class ServerManager {
 
   async updateServers() {
     this.servers = await proxyNs(this.ns, 'getPurchasedServers');
+
+    if (this.servers === 0) {
+      this.log.warn('No purchased servers found. Please purchase at least one server to manage.');
+      this.servers = [];
+    }
   }
 
   async tryPurchaseServer() {
@@ -140,6 +146,8 @@ class ServerManager {
     if (this.serversAreMaxed) return;
 
     this.maxedServersCount = 0;
+
+    this.log.info(JSON.stringify(this.servers));
 
     this.log.log('Trying to upgrade servers');
     for (const hostname of this.servers) {

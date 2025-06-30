@@ -19,7 +19,7 @@ function findServer(ns: NS, requiredRam: number): string|false {
     for (const connection of ns.scan(server)) {
       serverList.add(connection);
       if (connection === "home") continue; // Skip home server to avoid infinite loop
-      if (!ns.hasRootAccess(server)) continue;
+      if (!ns.hasRootAccess(connection)) continue;
       const serverRam = ns.getServerMaxRam(connection) - ns.getServerUsedRam(connection);
       if (serverRam >= requiredRam) {
         return connection;

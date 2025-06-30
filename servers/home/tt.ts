@@ -1,19 +1,13 @@
 import { proxy, proxyNs } from '@lib/ram-dodge';
+import { Planner } from '@/servers/home/batcher/Planner';
 
 export async function main(ns: NS) {
 
+  ns.disableLog('ALL');
   ns.clearLog();
 
-  const target = 'foodnstuff';
+  const planner = new Planner(ns, 'rho-construction');
 
-  const maxMoney = 50_000_000;
-  const currentMoneyAmount = 2_000_000;
+  await planner.plan()
 
-  const threadsGrow = Math.ceil(ns.growthAnalyze(target, maxMoney / currentMoneyAmount));
-
-  const ramRequired = ns.getScriptRam('ttt.js', 'home');
-
-  ns.print(`Threads required to grow ${target} from ${ns.formatNumber(currentMoneyAmount)} to ${ns.formatNumber(maxMoney)}: ${threadsGrow}`);
-  ns.print(`RAM required to run ttt.js: ${ns.formatRam(ramRequired)}`);
-  ns.print(`Total RAM required: ${ns.formatRam(ramRequired * threadsGrow)}`);
 }

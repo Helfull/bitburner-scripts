@@ -69,7 +69,7 @@ type CommandLineArgs<T, Y> = {
 export function defineScript<T extends FlagsDefinition, Y extends ArgsDefinition>(
   ns: NS,
   definition: ScriptDefinition<T, Y>
-): CommandLineArgs<T, Y> | FlagsEvaluated<T> {
+): CommandLineArgs<T, Y> {
 
   const argCountRequired = Object.keys(definition.args ?? {}).length;
 
@@ -78,10 +78,6 @@ export function defineScript<T extends FlagsDefinition, Y extends ArgsDefinition
   setupTail(ns, flags);
 
   printHelp(ns, flags, definition);
-
-  if (argCountRequired === 0) {
-    return flags;
-  }
 
   const args = getArgs(flags['_'] || [], definition.args) as ArgsEvaluated<Y>;
   delete flags['_'];

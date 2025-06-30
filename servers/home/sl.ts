@@ -1,8 +1,9 @@
 import { Filters, Sorts } from '@/servers/home/tools/Serverlist/Serverlist';
 import { defineScript } from '@lib/flags';
+import { ScriptArg } from 'NetscriptDefinitions';
 
 export function main(ns: NS) {
-  const args = defineScript(ns, {
+  const { args, flags } = defineScript(ns, {
     description: 'Open the serverlist',
     flags: {
       display: {
@@ -33,26 +34,27 @@ export function main(ns: NS) {
   });
 
   const serverListArgs = {
-    sort: args.sort as Sorts[],
-    filter: args.filter as Filters[],
-    columns: args.columns,
-    servers: args.servers,
+    sort: flags.sort as Sorts[],
+    filter: flags.filter as Filters[],
+    columns: flags.columns,
+    servers: flags.servers,
   };
 
-  const serverListArgsArray: string[] = Object.entries(serverListArgs).reduce((acc, [key, value]) => {
-    for (const val of value) {
-      acc.push(`--${key}`, val);
-    }
-    return acc;
-  }, []);
+  const serverListArgsArray: ScriptArg[] = Object.entries(serverListArgs)
+    .reduce((acc, [key, value]) => {
+      for (const val of value) {
+        acc.push(`--${key}`, val);
+      }
+      return acc;
+    }, [] as ScriptArg[]);
 
-  if (args.display === 'cli') {
+  if (flags.display === 'cli') {
     ns.run('tools/Serverlist/cli.js', 1, ...serverListArgsArray);
     return;
-  } else if (args.display === 'window') {
+  } else if (flags.display === 'window') {
     ns.run('tools/Serverlist/window.js', 1, ...serverListArgsArray);
     return;
-  } else if (args.display === 'tab') {
+  } else if (flags.display === 'tab') {
     ns.run('tools/Serverlist/tab.js', 1, ...serverListArgsArray);
     return;
   }

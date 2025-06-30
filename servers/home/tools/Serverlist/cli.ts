@@ -30,7 +30,7 @@ const cliFormatMap: {
 };
 
 export async function main(ns: NS) {
-  const args = defineScript(ns, {
+  const { args, flags } = defineScript(ns, {
     description: 'List all servers',
     flags: {
       sort: {
@@ -71,14 +71,14 @@ export async function main(ns: NS) {
     ns.clearLog();
 
     const mappedServerTable = serverList(ns, {
-      sort: args.sort as Sorts[],
-      filter: args.filter as Filters[],
-      servers: args.servers,
+      sort: flags.sort as Sorts[],
+      filter: flags.filter as Filters[],
+      servers: flags.servers,
       markup: true,
     });
 
     const mappedRows = mappedServerTable.rows.map((row) => {
-      return args.columns.reduce((acc, col) => {
+      return flags.columns.reduce((acc, col) => {
         const field = cliFormatMap[col] || cliFormatMap.default;
         acc[col] = field(row.data[col], col, row.server, ns);
         return acc;
@@ -86,5 +86,5 @@ export async function main(ns: NS) {
     });
 
     printTableObj(ns, mappedRows, ns.tprint);
-  } while (args.refresh && (await ns.sleep(args.refreshrate as number)));
+  } while (flags.refresh && (await ns.sleep(flags.refreshrate as number)));
 }

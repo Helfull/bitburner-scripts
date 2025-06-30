@@ -1,45 +1,17 @@
-import { isPrepped } from '@/servers/home/batcher/utils';
+import { isMinDifficulty, isPrepped } from '@/servers/home/batcher/utils';
 import { exec, proxy, proxyNs } from '@lib/ram-dodge';
+import { getServers } from '@lib/utils';
+import { HAS_ADMIN_ACCESS, HAS_AVAILABLE_RAM, HAS_RAM_AVAILABLE, IS_NOT_HOME } from '@/servers/home/server/filter';
+import { BY_RAM_USAGE } from '@/servers/home/server/sort';
+import { ramAvailable } from '@/servers/home/server/utils';
+import { Color } from '@lib/colors';
+import { getExecServer } from '@/servers/home/batcher/batcher';
+import { Server } from '@/servers/home/batcher/Server';
+import { Metrics } from '@/servers/home/batcher/Metrics';
 
 export const SEC_DEC_WKN = 0.05;
 export const SEC_INC_HCK = 0.002;
 export const SEC_INC_GRW = 0.004;
-
-async function execProxy(ns: NS, script: string, threads: number, ...args: any[]) {
-  const ramCost = ns.getScriptRam(script);
-  return await proxy(ns, script, {
-    threads,
-    ramOverride: ramCost,
-    temporary: true
-  }, ...args);
-}
-
-async function mostRamServer(ns: NS): Promise<[string, number]> {
-  return await proxy(ns, 'lib/findMostRam.js', {
-    threads: 1,
-    temporary: true,
-    ramOverride: ns.getScriptRam('lib/findMostRam.js')
-  });
-}
-
-export async function main(ns: NS) {
-  ns.disableLog('sleep');
-  ns.disableLog('getServerMaxMoney');
-  ns.disableLog('getServerMoneyAvailable');
-  ns.disableLog('getServerSecurityLevel');
-  ns.disableLog('getServerMinSecurityLevel');
-  ns.disableLog('getWeakenTime');
-  ns.disableLog('getGrowTime');
-  ns.disableLog('getHackTime');
-
-  ns.clearLog();
-
-  const target = ns.args[0] as string;
-
-  ns.ui.setTailTitle('Starting batcher for target: ' + target);
-
-  await hwgw(ns, target);
-}
 
 function nsExec(ns: NS, script: string, host: string, threads: number, ...args: any[]) {
 
@@ -55,30 +27,51 @@ function nsExec(ns: NS, script: string, host: string, threads: number, ...args: 
   return pid;
 }
 
-async function prep(ns: NS, target: string) {
+function tryExec(ns: NS, script: string, threads: number, ...args: any[]) {
+  if (threads <= 0) {
+    ns.print(`WARN | Tried to execute script ${script} with ${threads} threads, which is not allowed.`);
+    return 0;
+  }
+
+  const host = getExecServer(ns, script, threads,  threads* 1.75)
+
+  if (!host) {
+    ns.print(`WARN | Not enough RAM available to run grow script with ${threads} threads.`);
+    return tryExec(ns, script, Math.ceil(threads / 2), ...args);
+  }
+
+  return nsExec(ns, script, host, threads, ...args);
+}
+
+export async function prep(ns: NS, target: string) {
   let runningScripts = [];
 
   ns.ui.setTailTitle('Prepping target: ' + target);
+
+  ns.print(`Preparing target server: ${target}`);
+
+  ns.atExit(() => {
+    ns.print(`Exiting prep script. Cleaning up...`);
+    for (let pid of runningScripts) {
+      if (ns.isRunning(pid)) {
+        ns.kill(pid);
+        ns.print(`Killed script with PID: ${pid}`);
+      }
+    }
+    ns.print(`Cleanup complete.`);
+  }, 'prep-exit-cleanup' + ns.pid);
+
   while (!isPrepped(ns, target)) {
-    const [ramServer, mostRam] = await mostRamServer(ns);
-    let maxThreads = Math.floor(mostRam / 1.75);
-    ns.print(`Most RAM server: ${ramServer} with ${ns.formatRam(mostRam)} RAM, max threads: ${maxThreads}`);
+    const server = new Server(ns, target);
 
-    const maxMoney = ns.getServerMaxMoney(target);
-    const currentMoney = ns.getServerMoneyAvailable(target);
-    const currentSecurity = ns.getServerSecurityLevel(target);
-    const minSecurity = ns.getServerMinSecurityLevel(target);
-
-    await ns.sleep(1000);
-    switch(true) {
-      case (currentMoney < maxMoney):
-        const growThreads = Math.min(Math.ceil(ns.growthAnalyze(target, maxMoney / currentMoney)));
-
-        runningScripts.push(nsExec(ns, 'batcher/scripts/grow.js', ramServer, growThreads, target, 0, 0));
+    switch(false) {
+      case (server.isMaxMoney):
+        const growThreads = Math.min(Math.ceil(ns.growthAnalyze(target, server.maxMoney / server.currentMoney)));
+        runningScripts.push(tryExec(ns, 'batcher/scripts/grow.js', growThreads, target, 0, 0));
         break;
-      case (currentSecurity > minSecurity):
-        const weakenThreads = Math.min(maxThreads, Math.ceil((currentSecurity - minSecurity) / SEC_DEC_WKN));
-        runningScripts.push(nsExec(ns, 'batcher/scripts/weaken.js', ramServer, weakenThreads, target, 0, 0));
+      case (server.isMinDifficulty):
+        const weakenThreads = Math.ceil((server.deltaSecurity) / SEC_DEC_WKN);
+        runningScripts.push(tryExec(ns, 'batcher/scripts/weaken.js', weakenThreads, target, 0, 0));
         break;
     }
 
@@ -90,58 +83,6 @@ async function prep(ns: NS, target: string) {
 
     runningScripts = [];
   }
-}
 
-async function hwgw(ns: NS, target: string) {
-
-  await prep(ns, target);
-
-  ns.ui.setTailTitle('Batching target: ' + target);
-  while (true) {
-    const maxMoney = ns.getServerMaxMoney(target);
-    const wknTime = ns.getWeakenTime(target);
-    const growTime = ns.getGrowTime(target);
-    const hackTime = ns.getHackTime(target);
-
-    const hPercent = ns.hackAnalyze(target);
-
-    const amount = maxMoney * 0.1;
-
-    const hackThreads = Math.max(1, Math.floor(ns.hackAnalyzeThreads(target, amount)));
-    const tGreed = hPercent * hackThreads;
-    const growThreads = Math.ceil(ns.growthAnalyze(target, maxMoney / (maxMoney - maxMoney * tGreed)));
-
-    const wkn1Threads = Math.max(Math.ceil(hackThreads * SEC_INC_HCK / SEC_DEC_WKN), 1);
-    const wkn2Threads = Math.max(Math.ceil(growThreads * SEC_INC_GRW / SEC_DEC_WKN), 1);
-
-    const endhackTime = Date.now() + wknTime;
-    const endWkn1Time = Date.now() + wknTime + 5;
-    const endGrowTime = Date.now() + wknTime + 10;
-    const endWkn2Time = Date.now() + wknTime + 15;
-
-    ns.print(`End times:
-    Hack: ${endhackTime - Date.now()}
-    Wkn1: ${endWkn1Time - Date.now()}
-    Grow: ${endGrowTime - Date.now()}
-    Wkn2: ${endWkn2Time - Date.now()}`);
-
-    ns.print(`Threads:
-    Hack: ${hackThreads}
-    Wkn1: ${wkn1Threads}
-    Grow: ${growThreads}
-    Wkn2: ${wkn2Threads}`);
-
-    ns.print(`Ram usage:
-    Hack: ${ns.formatRam(ns.getScriptRam('batcher/scripts/hack.js') * hackThreads)}
-    Wkn1: ${ns.formatRam(ns.getScriptRam('batcher/scripts/weaken.js') * wkn1Threads)}
-    Grow: ${ns.formatRam(ns.getScriptRam('batcher/scripts/grow.js') * growThreads)}
-    Wkn2: ${ns.formatRam(ns.getScriptRam('batcher/scripts/weaken.js') * wkn2Threads)}`);
-
-    if (hackThreads > 0) await execProxy(ns, 'batcher/scripts/hack.js', hackThreads, target, endhackTime, hackTime);
-    if (wkn1Threads > 0) await execProxy(ns, 'batcher/scripts/weaken.js', wkn1Threads, target, endWkn1Time, wknTime);
-    if (growThreads > 0) await execProxy(ns, 'batcher/scripts/grow.js', growThreads, target, endGrowTime, growTime);
-    if (wkn2Threads > 0) await execProxy(ns, 'batcher/scripts/weaken.js', wkn2Threads, target, endWkn2Time, wknTime);
-
-    await ns.sleep(20);
-  }
+  ns.print(`Target ${target} is prepped!`);
 }

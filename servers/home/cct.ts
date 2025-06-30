@@ -20,12 +20,6 @@ export async function main(ns: NS) {
 
   const type = args['_'][0] || '';
 
-  ns.tprint('---');
-  ns.codingcontract.getContractTypes().forEach((type) => {
-    ns.tprint(`  ${type}`);
-  });
-  ns.tprint('---');
-
   let servers = getServers(ns);
 
   if (target) {
@@ -47,8 +41,10 @@ export async function main(ns: NS) {
 
         const cct = ns.codingcontract.getContractType(file, server);
 
-        ns.tprint(`${server}: ${file}`);
-        ns.tprint(`  Type: ${cct}`);
+        if(cct === 'Square Root') {
+
+        ns.tprintf(`INFO | Found contract: ${cct} on ${server} (${file})`);
+        }
 
         if (solveContracts) {
           solveContract(ns, cct, file, server);
@@ -126,7 +122,6 @@ function solveContract(ns: NS, type, contractFile: string, host: string) {
   const solver = new ContractSolver(ns, type);
 
   if (!solver.hasSolver()) {
-    ns.tprint(`No solver for ${type}`);
     return;
   }
 
