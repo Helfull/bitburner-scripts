@@ -133,7 +133,7 @@ async function hwgw(ns: NS, target: string, visualizerPort: number = -1) {
      * This means we have to recalculate the greed amount to be at least 1 thread of hack.
      */
     const hPercent = hackThreads * hackPercentThread;
-    const growThreads = Math.ceil(ns.growthAnalyze(target, 1 / (1 - hPercent + 0.01)));
+    const growThreads = Math.ceil(ns.growthAnalyze(target, 1 / (1 - hPercent)) * 1.01);
 
     const wkn1Threads = Math.max(Math.ceil(hackThreads * SEC_INC_HCK / SEC_DEC_WKN), 1);
     const wkn2Threads = Math.max(Math.ceil(growThreads * SEC_INC_GRW / SEC_DEC_WKN), 1);
